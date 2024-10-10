@@ -1,7 +1,5 @@
 package com.gui.services;
 
-import com.gui.dialogs.SettingsDialog;
-
 import javax.swing.*;
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,15 +59,16 @@ public class SettingsManager {
 
 		if (!Files.exists(BASE_PATH) || !Files.isDirectory(BASE_PATH)) {
 			logger.log(Level.SEVERE, "Base path does not exist or is not a directory: " + BASE_PATH);
-			JOptionPane.showMessageDialog(dialog, "The specified base path does not exist or is not a valid directory: " + BASE_PATH, "Error",
+			JOptionPane.showMessageDialog(dialog, "The specified base path does not exist or is not a valid directory: "
+							+ BASE_PATH, "Error",
 					JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
-		settings.setProperty("base.path", BASE_PATH.getText());
-		settings.setProperty("languages", languagesField.getText());
-		settings.setProperty("search.unset.only", Boolean.toString(searchUnsetOnlyCheckbox.isSelected()));
-		settings.setProperty("convert.files", Boolean.toString(convertFilesCheckbox.isSelected()));
+		settings.setProperty("base.path", basePathField);
+		settings.setProperty("languages", languagesField);
+		settings.setProperty("search.unset.only", searchUnsetOnlyCheckbox);
+		settings.setProperty("convert.files", convertFilesCheckbox);
 
 		try (OutputStream output = Files.newOutputStream(Paths.get("settings.properties"))) {
 			settings.store(output, null);

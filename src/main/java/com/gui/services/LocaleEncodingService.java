@@ -17,7 +17,25 @@ public class LocaleEncodingService {
         return localeWithEncoding.GERMAN;
     }
 
-    // Inner class for handling encoding and locale
+    // Inner class to hold language properties and associated file path
+    public static class LanguageProperties {
+        private final Properties properties;
+        private final Path path;
+
+        public LanguageProperties(Properties properties, Path path) {
+            this.properties = properties;
+            this.path = path;
+        }
+
+        public Properties getProperties() {
+            return properties;
+        }
+
+        public Path getPath() {
+            return path;
+        }
+    }
+
     public enum localeWithEncoding {
         GERMAN(Locale.GERMAN, StandardCharsets.ISO_8859_1),
         ENGLISH(Locale.ENGLISH, StandardCharsets.ISO_8859_1),
@@ -45,25 +63,6 @@ public class LocaleEncodingService {
         public Charset getEncoding() {
 
             return Charset.forName(String.valueOf(encoding));
-        }
-    }
-
-    // Inner class to hold language properties and associated file path
-    public static class LanguageProperties {
-        private final Properties properties;
-        private final Path file;
-
-        public LanguageProperties(Properties properties, Path file) {
-            this.properties = properties;
-            this.file = file;
-        }
-
-        public Properties getProperties() {
-            return properties;
-        }
-
-        public Path getPath() {
-            return file;
         }
     }
 

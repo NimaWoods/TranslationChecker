@@ -1,12 +1,6 @@
 package com.gui.services;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,55 +14,72 @@ import static com.gui.services.LocaleEncodingService.getLocaleWithEncoding;
 
 public class FileEncodingConverter {
 
-    Logger logger = Logger.getLogger(getClass().getName());
+    static Logger logger = Logger.getLogger(FileEncodingConverter.class.getName());
 
     final Map<Path, String> unreadableFiles = new HashMap<>();
-
     public Map<Path, String> getUnreadableFiles() {
         return unreadableFiles;
     }
 
-    public static void convertFileEncoding(String inputFilePath, Charset inputEncoding, String outputEncoding) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(inputFilePath), inputEncoding));
-             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(inputFilePath), outputEncoding))) {
+    public static void convertFileEncoding(File inputFile, Charset sourceCharset, Charset targetCharset) {
+        File tempFile = new File(inputFile.getAbsolutePath() + ".tmp");
 
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(inputFile), sourceCharset));
+             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tempFile), targetCharset))) {
+
+            logger.log(Level.INFO, "Starting conversion for file: {0}", inputFile.getAbsolutePath());
             String line;
             while ((line = reader.readLine()) != null) {
                 writer.write(line);
                 writer.newLine();
             }
 
-            System.out.println("Converted file " + inputFilePath + " from " + inputEncoding + " to " + outputEncoding);
-        } catch (IOException e) {
-            System.err.println("Error converting file: " + inputFilePath);
-            e.printStackTrace();
-        }
-    }
+            // Rename the temp file to the original file
+            if (!tempFile.renameTo(inputFile)) {
+                throw new IOException("Failed to rename temp file to " + inputFile.getName());
+            }
+            logger.log(Level.INFO, "File encoding conversion completed for: {0}", inputFile.getAbsolutePath());
 
-    Path convertFile(String lang, Path path, boolean convertFiles, Charset inputEncoding, List<String[]> convertedFiles) {
-        if (convertFiles) {
-            Charset outputEncoding = getLocaleWithEncoding(lang).getEncoding();
-            if (outputEncoding != null) {
-                if (!inputEncoding.equals(outputEncoding)) {
-                    String inputFilePath = path.toString();
-                    try {
-                        FileEncodingConverter.convertFileEncoding(inputFilePath, inputEncoding, outputEncoding.name());
-                    } catch (Exception e) {
-                        logger.log(Level.WARNING, "Error converting file: " + inputFilePath, e);
-                        unreadableFiles.put(path, "Error converting file: " + e.getMessage());
-                        return null;
-                    }
-                    convertedFiles.add(new String[]{inputFilePath, inputEncoding.name(), outputEncoding.name()});
-                    path = Paths.get(inputFilePath);
-                }
-            } else {
-                logger.log(Level.WARNING, "No encoding found for language: " + lang);
+        } catch (UnsupportedEncodingException e) {
+            logger.log(Level.SEVERE, "Unsupported encoding encountered: {0}", e.getMessage());
+        } catch (FileNotFoundException e) {
+            logger.log(Level.SEVERE, "File not found: {0}", inputFile.getAbsolutePath());
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "IO error occurred during file conversion: {0}", e.getMessage());
+        } finally {
+            // Clean up temp file in case of failure
+            if (tempFile.exists() && !tempFile.delete()) {
+                logger.log(Level.WARNING, "Failed to delete temp file: {0}", tempFile.getAbsolutePath());
             }
         }
-        return path;
     }
 
     public static String convertPath(String path) {
-        return path.replace("\\", "/");
+
+		return path
+				.replace("\\", "/");
+
+    }
+
+    Path convertFile(String lang, Path path, boolean convertFiles, Charset inputEncoding, List<String[]> convertedFiles) {
+
+        String inputFilePath = path.toString();
+        File inputFile = new File(inputFilePath);
+
+        if (convertFiles) {
+            Charset outputEncoding = getLocaleWithEncoding(lang).getEncoding();
+	        if (!inputEncoding.equals(outputEncoding)) {
+		        try {
+			        FileEncodingConverter.convertFileEncoding(inputFile, inputEncoding, outputEncoding);
+		        } catch (Exception e) {
+			        logger.log(Level.WARNING, "Error converting file: " + inputFilePath, e);
+			        unreadableFiles.put(path, "Error converting file: " + e.getMessage());
+			        return null;
+		        }
+		        convertedFiles.add(new String[]{inputFilePath, inputEncoding.name(), outputEncoding.name()});
+		        path = Paths.get(inputFilePath);
+	        }
+        }
+        return path;
     }
 }
