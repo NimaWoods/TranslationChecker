@@ -1,4 +1,4 @@
-package com.TranslationCheckerGUI;
+package com.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -27,23 +28,23 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableRowSorter;
 
-import com.TranslationCheckerGUI.Dialogs.SettingsDialog;
-import com.TranslationCheckerGUI.tools.Settings;
-import com.TranslationCheckerGUI.tools.TranslationCheck;
-import com.TranslationCheckerGUI.tools.TranslationCheck.LanguageProperties;
+import com.gui.dialogs.SettingsDialog;
+import com.gui.services.LocaleEncodingService;
+import com.gui.services.SettingsManager;
+import com.gui.services.TranslationCheck;
 
-public class TranslationCheckerGUI extends JFrame {
+public class TranslationCheckerApp extends JFrame {
 
-	private static final Logger logger = Logger.getLogger(TranslationCheckerGUI.class.getName());
+	private static final Logger logger = Logger.getLogger(TranslationCheckerApp.class.getName());
 
 	private JTable table;
 	private DefaultTableModel tableModel;
 	private JProgressBar progressBar;
 	private JLabel statusLabel;
-	private Settings settings;
+	private SettingsManager settings;
 
-	public TranslationCheckerGUI() {
-		settings = new Settings();
+	public TranslationCheckerApp() {
+		settings = new SettingsManager();
 		settings.loadSettings();
 
 		initLookAndFeel();
@@ -52,7 +53,7 @@ public class TranslationCheckerGUI extends JFrame {
 
 	public static void main(String[] args) {
 		SwingUtilities.invokeLater(() -> {
-			TranslationCheckerGUI gui = new TranslationCheckerGUI();
+			TranslationCheckerApp gui = new TranslationCheckerApp();
 			gui.setVisible(true);
 		});
 	}
@@ -107,13 +108,13 @@ public class TranslationCheckerGUI extends JFrame {
 	private void initButtonsAndPanels() {
 		JButton refreshButton = new JButton("Refresh");
 		refreshButton.addActionListener(e -> {
-			TranslationCheck translationCheck = new TranslationCheck(progressBar);
+			TranslationCheck translationCheck = new TranslationCheck(progressBar, this);
 			translationCheck.startTranslationCheck();
 		});
 
 		JButton settingsButton = new JButton("Settings");
 		SettingsDialog settingsDialog = new SettingsDialog();
-		settingsButton.addActionListener(e -> settingsDialog.showSettingsDialog(this, settings.getSettings()));
+		settingsButton.addActionListener(e -> settingsDialog.show(this, settings.getSettings()));
 
 		JButton allTranslationsButton = new JButton("Edit Translations");
 
@@ -161,47 +162,42 @@ public class TranslationCheckerGUI extends JFrame {
 
 
 
-	public void updateTable(Map<String, List<LanguageProperties>> propertiesMap, boolean searchUnsetOnly, String[] LANGUAGES) {
+	public void updateTable(Map<String, List<LocaleEncodingService.LanguageProperties>> propertiesMap, boolean searchUnsetOnly, String[] LANGUAGES) {
 		table.setRowSorter(null);
 		tableModel.setRowCount(0);
 
 		int totalEntries = 0;
+		Pattern unsetPattern = Pattern.compile(".* \\((de|en|es|fr|hu|it|nl)\\)$");
 
 		for (String lang : LANGUAGES) {
-			List<LanguageProperties> languageFiles = propertiesMap.get(lang);
+			List<LocaleEncodingService.LanguageProperties> languageFiles = propertiesMap.get(lang);
 			if (languageFiles == null || languageFiles.isEmpty()) {
 				continue;
 			}
 
-			for (LanguageProperties languageProps : languageFiles) {
+			for (LocaleEncodingService.LanguageProperties languageProps : languageFiles) {
 				Properties properties = languageProps.getProperties();
 				Path filePath = languageProps.getPath();
 
 				for (String key : properties.stringPropertyNames()) {
-					String value = properties.getProperty(key);
-					value = (value == null || value.isEmpty()) ? "" : value;
+					String value = properties.getProperty(key, ""); // Fallback to empty string if null
 
-					if (searchUnsetOnly) {
-						if (value.isEmpty() || value.matches(".* \\((de|en|es|fr|hu|it|nl)\\)$")) {
-							tableModel.addRow(new Object[]{lang, key, value, filePath.toString()});
-						}
-					} else {
+					if (!searchUnsetOnly || value.isEmpty() || unsetPattern.matcher(value).matches()) {
 						tableModel.addRow(new Object[]{lang, key, value, filePath.toString()});
+						totalEntries++;
 					}
-					totalEntries++;
 				}
 			}
 		}
 
 		statusLabel.setText("Translation Checker - Total Entries: " + totalEntries);
-
 		table.revalidate();
 		table.repaint();
 
 		if (totalEntries > 0) {
 			TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
 			table.setRowSorter(sorter);
-			sorter.setSortKeys(List.of(new RowSorter.SortKey(1, SortOrder.ASCENDING)));
+			sorter.setSortKeys(null);
 		}
 	}
 }

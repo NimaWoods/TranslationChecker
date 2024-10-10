@@ -1,4 +1,4 @@
-package com.TranslationCheckerGUI.Dialogs;
+package com.gui.dialogs;
 
 import java.util.List;
 
@@ -8,7 +8,7 @@ import javax.swing.JTable;
 
 public class ConvertedFilesDialog {
 
-	public void showConvertedFilesDialog(List<String[]> convertedFiles) {
+	public void show(List<String[]> convertedFiles) {
 		if (!convertedFiles.isEmpty()) {
 			String[] columnNames = {"Converted Files", "Old Encoding", "New Encoding"};
 

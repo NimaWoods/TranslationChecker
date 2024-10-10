@@ -34,7 +34,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.TranslationCheckerGUI.TranslationCheckerGUI</mainClass>
+                            <mainClass>com.gui.TranslationCheckerApp</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

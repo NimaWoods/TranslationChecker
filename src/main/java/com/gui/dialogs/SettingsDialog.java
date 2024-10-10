@@ -1,4 +1,6 @@
-package com.TranslationCheckerGUI.Dialogs;
+package com.gui.dialogs;
+
+import com.gui.services.SettingsManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -6,12 +8,47 @@ import java.util.Properties;
 
 public class SettingsDialog {
 
+	public JTextField getBasePathField() {
+		return basePathField;
+	}
+
+	public void setBasePathField(JTextField basePathField) {
+		this.basePathField = basePathField;
+	}
+
+	public JTextField getLanguagesField() {
+		return languagesField;
+	}
+
+	public void setLanguagesField(JTextField languagesField) {
+		this.languagesField = languagesField;
+	}
+
+	public JCheckBox getSearchUnsetOnlyCheckbox() {
+		return searchUnsetOnlyCheckbox;
+	}
+
+	public void setSearchUnsetOnlyCheckbox(JCheckBox searchUnsetOnlyCheckbox) {
+		this.searchUnsetOnlyCheckbox = searchUnsetOnlyCheckbox;
+	}
+
+	public JCheckBox getConvertFilesCheckbox() {
+		return convertFilesCheckbox;
+	}
+
+	public void setConvertFilesCheckbox(JCheckBox convertFilesCheckbox) {
+		this.convertFilesCheckbox = convertFilesCheckbox;
+	}
+
+
 	private JTextField basePathField;
 	private JTextField languagesField;
 	private JCheckBox searchUnsetOnlyCheckbox;
 	private JCheckBox convertFilesCheckbox;
 
-	public void showSettingsDialog(JFrame parent, Properties settings) {
+	SettingsManager settingsDAO = new SettingsManager();
+
+	public void show(JFrame parent, Properties settings) {
 		JDialog settingsDialog = new JDialog(parent, "Settings", true);
 		settingsDialog.setLayout(new GridLayout(5, 2));
 
@@ -38,7 +75,7 @@ public class SettingsDialog {
 
 		JButton saveButton = new JButton("Save");
 		saveButton.addActionListener(e -> {
-			saveSettings(settings);
+			settingsDAO.saveSettings(settings, settingsDialog);
 			settingsDialog.dispose();
 		});
 		buttonPanel.add(saveButton);
@@ -52,12 +89,5 @@ public class SettingsDialog {
 		settingsDialog.pack();
 		settingsDialog.setLocationRelativeTo(parent);
 		settingsDialog.setVisible(true);
-	}
-
-	private void saveSettings(Properties settings) {
-		settings.setProperty("base.path", basePathField.getText());
-		settings.setProperty("languages", languagesField.getText());
-		settings.setProperty("search.unset.only", Boolean.toString(searchUnsetOnlyCheckbox.isSelected()));
-		settings.setProperty("convert.files", Boolean.toString(convertFilesCheckbox.isSelected()));
 	}
 }
