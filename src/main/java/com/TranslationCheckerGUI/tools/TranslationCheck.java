@@ -61,7 +61,7 @@ public class TranslationCheck {
 				boolean searchUnsetOnly = Boolean.parseBoolean(settings.getProperty("search.unset.only", "false"));
 				boolean convertFiles = Boolean.parseBoolean(settings.getProperty("convert.files", "false"));
 
-				String pathSetting = settings.getProperty("base.path", BASE_PATH);
+				String pathSetting = settings.getProperty("base.path", "PATH");
 				Path files = Paths.get(pathSetting);
 
 				if (!Files.exists(files) || !Files.isDirectory(files)) {
@@ -78,8 +78,6 @@ public class TranslationCheck {
 					for (Path path : paths) {
 						Properties properties = new Properties();
 						Charset inputEncoding = getLocaleWithEncoding(lang).getEncoding();
-
-						inputEncoding = getFileEncoding(path, inputEncoding);
 
 						path = convertFile(lang, path, convertFiles, inputEncoding, convertedFiles);
 

@@ -1,14 +1,28 @@
 package com.TranslationCheckerGUI;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.util.logging.Logger;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+
 import com.TranslationCheckerGUI.Dialogs.SettingsDialog;
 import com.TranslationCheckerGUI.tools.Settings;
 import com.TranslationCheckerGUI.tools.TranslationCheck;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import java.awt.*;
-import java.util.logging.Logger;
 
 public class TranslationCheckerGUI extends JFrame {
 
@@ -18,10 +32,12 @@ public class TranslationCheckerGUI extends JFrame {
 	private JProgressBar progressBar;
 	private JLabel statusLabel;
 	private Settings settings;
+	private String BASE_PATH;
 
 	public TranslationCheckerGUI() {
 		settings = new Settings();
 		settings.loadSettings();
+		BASE_PATH = settings.getSettings().getProperty("base.path");
 
 		initLookAndFeel();
 		initComponents();
@@ -49,7 +65,7 @@ public class TranslationCheckerGUI extends JFrame {
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setLocationRelativeTo(null);
 
-		String[] columnNames = {"Language", "Key", "Value", "File Path"};
+		String[] columnNames = { "Language", "Key", "Value", "File Path" };
 		tableModel = new DefaultTableModel(columnNames, 0) {
 			@Override
 			public boolean isCellEditable(int row, int column) {
@@ -84,7 +100,8 @@ public class TranslationCheckerGUI extends JFrame {
 	private void initButtonsAndPanels() {
 		JButton refreshButton = new JButton("Refresh");
 		refreshButton.addActionListener(e -> {
-			TranslationCheck translationCheck = new TranslationCheck(progressBar, new String[]{"en", "de"}, "basePath", settings.getSettings());
+			TranslationCheck translationCheck = new TranslationCheck(progressBar, new String[] { "en", "de" }, BASE_PATH,
+					settings.getSettings());
 			translationCheck.startTranslationCheck();
 		});
 

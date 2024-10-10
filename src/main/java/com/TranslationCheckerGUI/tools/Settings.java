@@ -18,6 +18,7 @@ public class Settings {
 
 	public Settings() {
 		settings = new Properties();
+		loadSettings();
 	}
 
 	public Properties getSettings() {
