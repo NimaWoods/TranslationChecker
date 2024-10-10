@@ -1,38 +1,48 @@
 package com.TranslationCheckerGUI.tools;
 
 import java.awt.Dimension;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
+import javax.swing.JOptionPane;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.SwingWorker;
 
 import com.TranslationCheckerGUI.Dialogs.ConvertedFilesDialog;
+import com.TranslationCheckerGUI.TranslationCheckerGUI;
 
 public class TranslationCheck {
 
 	Logger logger = Logger.getLogger(getClass().getName());
-	private JProgressBar progressBar;
-	private String[] LANGUAGES;
-	private String BASE_PATH;
-	private Properties settings;
-	private DefaultTableModel tableModel;
-	private JTable table;
-	private JLabel statusLabel;
+	private final JProgressBar progressBar;
+	private final String[] LANGUAGES;
+	private final String BASE_PATH;
+	Properties settings;
 
-	public TranslationCheck(JProgressBar progressBar, String[] LANGUAGES, String BASE_PATH, Properties settings) {
+	Settings settingsDAO = new Settings();
+
+	public TranslationCheck(JProgressBar progressBar) {
+		this.settings = settingsDAO.getSettings();
 		this.progressBar = progressBar;
-		this.LANGUAGES = LANGUAGES;
-		this.BASE_PATH = BASE_PATH;
-		this.settings = settings;
+		this.LANGUAGES = settings.getProperty("languages").split(",");
+		this.BASE_PATH = settings.getProperty("base.path");;
 	}
 
 	public void startTranslationCheck() {
@@ -58,6 +68,7 @@ public class TranslationCheck {
 
 				Map<String, List<LanguageProperties>> propertiesMap = new HashMap<>();
 				List<String[]> convertedFiles = new ArrayList<>();
+
 				boolean searchUnsetOnly = Boolean.parseBoolean(settings.getProperty("search.unset.only", "false"));
 				boolean convertFiles = Boolean.parseBoolean(settings.getProperty("convert.files", "false"));
 
@@ -120,7 +131,9 @@ public class TranslationCheck {
 					}
 				}
 
-				updateTable(propertiesMap, searchUnsetOnly);
+				// Update the table with the properties
+				TranslationCheckerGUI translationCheckerGUI = new TranslationCheckerGUI();
+				translationCheckerGUI.updateTable(propertiesMap, searchUnsetOnly, LANGUAGES);
 				return null;
 			}
 
@@ -242,50 +255,6 @@ public class TranslationCheck {
 	private String convertPath(String path) {
 		// Implement the method logic here
 		return path;
-	}
-
-	private void updateTable(Map<String, List<LanguageProperties>> propertiesMap, boolean searchUnsetOnly) {
-		table.setRowSorter(null);
-		tableModel.setRowCount(0);
-
-		int totalEntries = 0;
-
-		for (String lang : LANGUAGES) {
-			List<LanguageProperties> languageFiles = propertiesMap.get(lang);
-			if (languageFiles == null || languageFiles.isEmpty()) {
-				continue;
-			}
-
-			for (LanguageProperties languageProps : languageFiles) {
-				Properties properties = languageProps.getProperties();
-				Path filePath = languageProps.getPath();
-
-				for (String key : properties.stringPropertyNames()) {
-					String value = properties.getProperty(key);
-					value = (value == null || value.isEmpty()) ? "" : value;
-
-					if (searchUnsetOnly) {
-						if (value.isEmpty() || value.matches(".* \\((de|en|es|fr|hu|it|nl)\\)$")) {
-							tableModel.addRow(new Object[]{lang, key, value, filePath.toString()});
-						}
-					} else {
-						tableModel.addRow(new Object[]{lang, key, value, filePath.toString()});
-					}
-					totalEntries++;
-				}
-			}
-		}
-
-		statusLabel.setText("Translation Checker - Total Entries: " + totalEntries);
-
-		table.revalidate();
-		table.repaint();
-
-		if (totalEntries > 0) {
-			TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
-			table.setRowSorter(sorter);
-			sorter.setSortKeys(List.of(new RowSorter.SortKey(1, SortOrder.ASCENDING)));
-		}
 	}
 
 	// Helper method to search for properties files

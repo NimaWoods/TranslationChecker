@@ -3,6 +3,10 @@ package com.TranslationCheckerGUI;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
@@ -15,29 +19,32 @@ import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.RowSorter;
+import javax.swing.SortOrder;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableRowSorter;
 
 import com.TranslationCheckerGUI.Dialogs.SettingsDialog;
 import com.TranslationCheckerGUI.tools.Settings;
 import com.TranslationCheckerGUI.tools.TranslationCheck;
+import com.TranslationCheckerGUI.tools.TranslationCheck.LanguageProperties;
 
 public class TranslationCheckerGUI extends JFrame {
 
 	private static final Logger logger = Logger.getLogger(TranslationCheckerGUI.class.getName());
+
 	private JTable table;
 	private DefaultTableModel tableModel;
 	private JProgressBar progressBar;
 	private JLabel statusLabel;
 	private Settings settings;
-	private String BASE_PATH;
 
 	public TranslationCheckerGUI() {
 		settings = new Settings();
 		settings.loadSettings();
-		BASE_PATH = settings.getSettings().getProperty("base.path");
 
 		initLookAndFeel();
 		initComponents();
@@ -100,8 +107,7 @@ public class TranslationCheckerGUI extends JFrame {
 	private void initButtonsAndPanels() {
 		JButton refreshButton = new JButton("Refresh");
 		refreshButton.addActionListener(e -> {
-			TranslationCheck translationCheck = new TranslationCheck(progressBar, new String[] { "en", "de" }, BASE_PATH,
-					settings.getSettings());
+			TranslationCheck translationCheck = new TranslationCheck(progressBar);
 			translationCheck.startTranslationCheck();
 		});
 
@@ -150,6 +156,52 @@ public class TranslationCheckerGUI extends JFrame {
 				table.scrollRectToVisible(table.getCellRect(i, 0, true));
 				break;
 			}
+		}
+	}
+
+
+
+	public void updateTable(Map<String, List<LanguageProperties>> propertiesMap, boolean searchUnsetOnly, String[] LANGUAGES) {
+		table.setRowSorter(null);
+		tableModel.setRowCount(0);
+
+		int totalEntries = 0;
+
+		for (String lang : LANGUAGES) {
+			List<LanguageProperties> languageFiles = propertiesMap.get(lang);
+			if (languageFiles == null || languageFiles.isEmpty()) {
+				continue;
+			}
+
+			for (LanguageProperties languageProps : languageFiles) {
+				Properties properties = languageProps.getProperties();
+				Path filePath = languageProps.getPath();
+
+				for (String key : properties.stringPropertyNames()) {
+					String value = properties.getProperty(key);
+					value = (value == null || value.isEmpty()) ? "" : value;
+
+					if (searchUnsetOnly) {
+						if (value.isEmpty() || value.matches(".* \\((de|en|es|fr|hu|it|nl)\\)$")) {
+							tableModel.addRow(new Object[]{lang, key, value, filePath.toString()});
+						}
+					} else {
+						tableModel.addRow(new Object[]{lang, key, value, filePath.toString()});
+					}
+					totalEntries++;
+				}
+			}
+		}
+
+		statusLabel.setText("Translation Checker - Total Entries: " + totalEntries);
+
+		table.revalidate();
+		table.repaint();
+
+		if (totalEntries > 0) {
+			TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
+			table.setRowSorter(sorter);
+			sorter.setSortKeys(List.of(new RowSorter.SortKey(1, SortOrder.ASCENDING)));
 		}
 	}
 }
