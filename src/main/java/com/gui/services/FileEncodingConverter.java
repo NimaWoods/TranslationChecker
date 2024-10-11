@@ -61,7 +61,7 @@ public class FileEncodingConverter {
 
     }
 
-    Path convertFile(String lang, Path path, boolean convertFiles, Charset inputEncoding, List<String[]> convertedFiles) {
+    public Path convertFile(String lang, Path path, boolean convertFiles, Charset inputEncoding, List<String[]> convertedFiles) {
 
         String inputFilePath = path.toString();
         File inputFile = new File(inputFilePath);

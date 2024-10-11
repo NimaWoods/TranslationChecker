@@ -1,9 +1,19 @@
-package com.gui.services;
+package com.gui.core;
 
+import com.gui.TranslationCheckerApp;
+import com.gui.contsants.Language;
+import com.gui.manager.SettingsManager;
+import com.gui.model.LanguageProperties;
+import com.gui.services.FileEncodingConverter;
+import com.gui.ui.ConvertedFilesDialog;
+import com.gui.ui.FileWarningDialog;
+
+import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,13 +23,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.swing.JOptionPane;
-import javax.swing.JProgressBar;
-import javax.swing.SwingWorker;
-import com.gui.dialogs.ConvertedFilesDialog;
-import com.gui.TranslationCheckerApp;
-import com.gui.dialogs.FileWarningDialog;
-import static com.gui.services.LocaleEncodingService.getLocaleWithEncoding;
 
 public class TranslationCheck {
 
@@ -35,7 +38,7 @@ public class TranslationCheck {
 	public TranslationCheck(JProgressBar progressBar, TranslationCheckerApp app) {
 		this.settings = settingsDAO.getSettings();
 		this.progressBar = progressBar;
-		this.LANGUAGES = settings.getProperty("languages").split(",");
+		this.LANGUAGES = Arrays.stream(settings.getProperty("languages").split(",")).toArray(String[]::new);
 		this.BASE_PATH = settings.getProperty("base.path");
 		this.translationCheckerApp = app;
 	}
@@ -61,7 +64,7 @@ public class TranslationCheck {
 				progressBar.setValue(0);
 				progressBar.setVisible(true);
 
-				Map<String, List<LocaleEncodingService.LanguageProperties>> propertiesMap = new HashMap<>();
+				Map<Language, List<LanguageProperties>> propertiesMap = new HashMap<>();
 				List<String[]> convertedFiles = new ArrayList<>();
 
 				boolean searchUnsetOnly = Boolean.parseBoolean(settings.getProperty("search.unset.only", "false"));
@@ -75,26 +78,38 @@ public class TranslationCheck {
 					return null;
 				}
 
-				for (String lang : LANGUAGES) {
-					List<Path> paths = findAllPropertiesFiles(BASE_PATH, "messages_" + lang + ".properties");
+				// Iterate over all languages names
+				for (Language lang : Language.values()) {
+
+					Charset inputEncoding;
+					if (lang == null) {
+						inputEncoding = StandardCharsets.ISO_8859_1;
+					} else {
+						inputEncoding = lang.getEncoding();
+					}
+
+					List<Path> paths = findAllPropertiesFiles(BASE_PATH, lang);
 					int completedSteps = 0;
 					int totalSteps = paths.size();
 
 					for (Path path : paths) {
 						Properties properties = new Properties();
-						Charset inputEncoding = LocaleEncodingService.getLocaleWithEncoding(lang).getEncoding();
 
 						FileEncodingConverter converter = new FileEncodingConverter();
-						path = converter.convertFile(lang, path, convertFiles, inputEncoding, convertedFiles);
+						path = converter.convertFile(lang.name(), path, convertFiles, inputEncoding, convertedFiles);
 						unreadableFiles = converter.getUnreadableFiles();
 
 						try (BufferedReader reader = Files.newBufferedReader(path, inputEncoding)) {
 							properties.load(reader);
+							for (String key : properties.stringPropertyNames()) {
+								String value = properties.getProperty(key);
+							}
 						} catch (IOException e) {
 							handleFileError(path, e, unreadableFiles, inputEncoding);
 						}
 
-						propertiesMap.computeIfAbsent(lang, k -> new ArrayList<>()).add(new LocaleEncodingService.LanguageProperties(properties, path));
+						propertiesMap.computeIfAbsent(lang, k -> new ArrayList<>())
+								.add(new LanguageProperties(properties, path));
 
 						completedSteps++;
 						setProgress((int) (((double) completedSteps / totalSteps) * 100));
@@ -131,29 +146,21 @@ public class TranslationCheck {
 	private void handleFileError(Path path, IOException e, Map<Path, String> unreadableFiles, Charset inputEncoding) {
 		String message = e.getMessage();
 		if (message != null && message.contains("Input length =")) {
-			boolean encodingExists = Arrays.stream(LocaleEncodingService.localeWithEncoding.values())
-            .anyMatch(locale -> locale.getEncoding().equals(inputEncoding));
-
-			if (!encodingExists || !inputEncoding.equals(getLocaleWithEncoding(path.getFileName().toString().substring(9, 11)).getEncoding())) {
-				unreadableFiles.put(path, "Wrong encoding detected: " + inputEncoding);
-			} else {
-				unreadableFiles.put(path, "Malformed input detected: " + message);
-			}
+			unreadableFiles.put(path, "Malformed input detected: " + message);
 		} else {
 			unreadableFiles.put(path, message);
 		}
 	}
 
-	private String convertPath(String path) {
-		return path.replace(BASE_PATH, "BASE_PATH");
-	}
-
 	// Helper method to search for properties files
-	private List<Path> findAllPropertiesFiles(String basePath, String fileName) throws IOException {
-		System.out.println("Searching for all files named: " + fileName + " in " + basePath);
+	private List<Path> findAllPropertiesFiles(String basePath, Language lang) throws IOException {
+
+		// Verwende lang.getLocale().getLanguage() anstelle von getLocale().toString()
+		String prefix = "messages_" + lang.getLocale().getLanguage();
 
 		try (Stream<Path> files = Files.walk(Paths.get(basePath))) {
-			return files.filter(path -> path.getFileName().toString().equals(fileName))
+			return files.filter(path -> path.getFileName().toString().startsWith(prefix))
+					.filter(path -> path.getFileName().toString().endsWith(".properties"))
 					.filter(path -> !path.toString().contains("bin" + File.separator))
 					.filter(path -> !path.toString().contains("build" + File.separator))
 					.collect(Collectors.toList());

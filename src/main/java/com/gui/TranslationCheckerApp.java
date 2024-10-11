@@ -1,37 +1,23 @@
 package com.gui;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.FlowLayout;
+import com.gui.contsants.Language;
+import com.gui.core.TranslationCheck;
+import com.gui.manager.SettingsManager;
+import com.gui.model.LanguageProperties;
+import com.gui.ui.SettingsDialog;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableRowSorter;
+import java.awt.*;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.RowSorter;
-import javax.swing.SortOrder;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableRowSorter;
-
-import com.gui.dialogs.SettingsDialog;
-import com.gui.services.LocaleEncodingService;
-import com.gui.services.SettingsManager;
-import com.gui.services.TranslationCheck;
 
 public class TranslationCheckerApp extends JFrame {
 
@@ -42,6 +28,8 @@ public class TranslationCheckerApp extends JFrame {
 	private JProgressBar progressBar;
 	private JLabel statusLabel;
 	private SettingsManager settings;
+
+	SettingsDialog settingsDialog;
 
 	public TranslationCheckerApp() {
 		settings = new SettingsManager();
@@ -73,7 +61,7 @@ public class TranslationCheckerApp extends JFrame {
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setLocationRelativeTo(null);
 
-		String[] columnNames = { "Language", "Key", "Value", "File Path" };
+		String[] columnNames = {"Language", "Key", "Value", "File Path"};
 		tableModel = new DefaultTableModel(columnNames, 0) {
 			@Override
 			public boolean isCellEditable(int row, int column) {
@@ -113,8 +101,10 @@ public class TranslationCheckerApp extends JFrame {
 		});
 
 		JButton settingsButton = new JButton("Settings");
-		SettingsDialog settingsDialog = new SettingsDialog();
-		settingsButton.addActionListener(e -> settingsDialog.show(this, settings.getSettings()));
+		settingsDialog = new SettingsDialog();
+		settingsButton.addActionListener(e -> {
+			settingsDialog.show(this, settings.getSettings());
+		});
 
 		JButton allTranslationsButton = new JButton("Edit Translations");
 
@@ -160,44 +150,55 @@ public class TranslationCheckerApp extends JFrame {
 		}
 	}
 
-
-
-	public void updateTable(Map<String, List<LocaleEncodingService.LanguageProperties>> propertiesMap, boolean searchUnsetOnly, String[] LANGUAGES) {
-		table.setRowSorter(null);
+	public void updateTable(Map<Language, List<LanguageProperties>> propertiesMap, boolean searchUnsetOnly, String[] LANGUAGES) {
 		tableModel.setRowCount(0);
 
+		Pattern languageCodePattern = Pattern.compile(".*\\((" + String.join("|", LANGUAGES) + ")\\)$");
 		int totalEntries = 0;
-		Pattern unsetPattern = Pattern.compile(".* \\((de|en|es|fr|hu|it|nl)\\)$");
 
-		for (String lang : LANGUAGES) {
-			List<LocaleEncodingService.LanguageProperties> languageFiles = propertiesMap.get(lang);
-			if (languageFiles == null || languageFiles.isEmpty()) {
-				continue;
-			}
+		for (Language lang : propertiesMap.keySet()) {
+			List<LanguageProperties> languageFiles = propertiesMap.get(lang);
 
-			for (LocaleEncodingService.LanguageProperties languageProps : languageFiles) {
+			for (LanguageProperties languageProps : languageFiles) {
 				Properties properties = languageProps.getProperties();
 				Path filePath = languageProps.getPath();
 
 				for (String key : properties.stringPropertyNames()) {
-					String value = properties.getProperty(key, ""); // Fallback to empty string if null
+					String value = properties.getProperty(key, "");
 
-					if (!searchUnsetOnly || value.isEmpty() || unsetPattern.matcher(value).matches()) {
-						tableModel.addRow(new Object[]{lang, key, value, filePath.toString()});
+					if (searchUnsetOnly) {
+						if (languageCodePattern.matcher(value).matches()) {
+							tableModel.addRow(new Object[]{lang.getLocale(), key, " ", filePath.toString()});
+							totalEntries++;
+						} else if (value.isEmpty()) {
+							tableModel.addRow(new Object[]{lang.getLocale(), key, value, filePath.toString()});
+							totalEntries++;
+						}
+					} else {
+						tableModel.addRow(new Object[]{lang.getLocale(), key, value, filePath.toString()});
 						totalEntries++;
 					}
 				}
 			}
 		}
 
-		statusLabel.setText("Translation Checker - Total Entries: " + totalEntries);
+		statusLabel.setText("Total Entries: " + totalEntries);
+		sortTabel();
+	}
+
+	public void sortTabel() {
+		TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
+		table.setRowSorter(sorter);
+
+		List<RowSorter.SortKey> sortKeys = new ArrayList<>(25);
+		sortKeys.add(new RowSorter.SortKey(1, SortOrder.ASCENDING));
+		sorter.setSortKeys(sortKeys);
+
 		table.revalidate();
 		table.repaint();
+	}
 
-		if (totalEntries > 0) {
-			TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
-			table.setRowSorter(sorter);
-			sorter.setSortKeys(null);
-		}
+	public void setStatusLabel(String text) {
+		statusLabel.setText(text);
 	}
 }

@@ -1,10 +1,7 @@
-package com.gui.dialogs;
+package com.gui.ui;
 
+import javax.swing.*;
 import java.util.List;
-
-import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
 
 public class ConvertedFilesDialog {
 

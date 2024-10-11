@@ -1,6 +1,6 @@
-package com.gui.dialogs;
+package com.gui.ui;
 
-import com.gui.services.SettingsManager;
+import com.gui.manager.SettingsManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -8,45 +8,28 @@ import java.util.Properties;
 
 public class SettingsDialog {
 
-	public JTextField getBasePathField() {
-		return basePathField;
+	SettingsManager settingsManager = new SettingsManager();
+
+	public String getBasePathField() {
+		return basePathField.getText();
 	}
 
-	public void setBasePathField(JTextField basePathField) {
-		this.basePathField = basePathField;
+	public String getLanguagesField() {
+		return languagesField.getText();
 	}
 
-	public JTextField getLanguagesField() {
-		return languagesField;
+	public boolean isSearchUnsetOnlyCheckboxSelected() {
+		return searchUnsetOnlyCheckbox.isSelected();
 	}
-
-	public void setLanguagesField(JTextField languagesField) {
-		this.languagesField = languagesField;
-	}
-
-	public JCheckBox getSearchUnsetOnlyCheckbox() {
-		return searchUnsetOnlyCheckbox;
-	}
-
-	public void setSearchUnsetOnlyCheckbox(JCheckBox searchUnsetOnlyCheckbox) {
-		this.searchUnsetOnlyCheckbox = searchUnsetOnlyCheckbox;
-	}
-
-	public JCheckBox getConvertFilesCheckbox() {
-		return convertFilesCheckbox;
-	}
-
-	public void setConvertFilesCheckbox(JCheckBox convertFilesCheckbox) {
-		this.convertFilesCheckbox = convertFilesCheckbox;
-	}
-
 
 	private JTextField basePathField;
 	private JTextField languagesField;
 	private JCheckBox searchUnsetOnlyCheckbox;
 	private JCheckBox convertFilesCheckbox;
 
-	SettingsManager settingsDAO = new SettingsManager();
+	public boolean isConvertFilesCheckboxSelected() {
+		return convertFilesCheckbox.isSelected();
+	}
 
 	public void show(JFrame parent, Properties settings) {
 		JDialog settingsDialog = new JDialog(parent, "Settings", true);
@@ -75,7 +58,7 @@ public class SettingsDialog {
 
 		JButton saveButton = new JButton("Save");
 		saveButton.addActionListener(e -> {
-			settingsDAO.saveSettings(settings, settingsDialog);
+			settingsManager.saveSettings(settings, settingsDialog, this);
 			settingsDialog.dispose();
 		});
 		buttonPanel.add(saveButton);

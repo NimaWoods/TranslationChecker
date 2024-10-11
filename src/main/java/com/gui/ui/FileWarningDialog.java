@@ -1,4 +1,4 @@
-package com.gui.dialogs;
+package com.gui.ui;
 
 import javax.swing.*;
 import java.awt.*;
