@@ -1,36 +1,18 @@
 package com.gui.ui;
 
-import java.awt.BorderLayout;
-import java.awt.Frame;
+import com.gui.manager.TranslationKeyManager;
+import com.gui.manager.TranslationManager;
+import com.gui.services.LocaleEncodingService;
+
+import javax.swing.*;
+import javax.swing.event.TableModelEvent;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import javax.swing.AbstractAction;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollBar;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.KeyStroke;
-import javax.swing.event.TableModelEvent;
-import javax.swing.table.DefaultTableModel;
-
-import com.gui.TranslationCheckerApp;
-import com.gui.contsants.Language;
-import com.gui.manager.TranslationKeyManager;
-import com.gui.services.DeepLService;
-import com.gui.services.LocaleEncodingService;
 
 public class EditTranslationsDialog {
 
@@ -74,7 +56,7 @@ public class EditTranslationsDialog {
 		JDialog dialog = new JDialog((Frame) null, "Translations for Key: " + key, true);
 		dialog.setLayout(new BorderLayout());
 
-		String[] columnNames = { "Language", "Key", "Value", "File Path" };
+		String[] columnNames = { "LanguagesConstant", "Key", "Value", "File Path" };
 
 		editDialogTableModel = new DefaultTableModel(columnNames, 0) {
 			@Override
@@ -114,59 +96,8 @@ public class EditTranslationsDialog {
 		JButton translateButtons = new JButton("Translate");
 		translateButtons.addActionListener(e -> {
 
-			// Get selected row from the table
-			List<String> selectedValues = new ArrayList<>();
-
-			if (editDialogTable.getSelectedRowCount() > 1) {
-				int[] selectedRowsInEditDialog = editDialogTable.getSelectedRows();
-				for (int selectedRowInEditDialog : selectedRowsInEditDialog) {
-					String selectedValue = (String) editDialogTable.getValueAt(selectedRowInEditDialog, 2);
-					selectedValues.add(selectedValue);
-				}
-			} else {
-				int selectedRowInEditDialog = editDialogTable.getSelectedRow();
-				if (selectedRowInEditDialog == -1) {
-					JOptionPane.showMessageDialog(null, "Please select a row to translate.");
-					return;
-				}
-
-				String selectedValue = (String) editDialogTable.getValueAt(selectedRowInEditDialog, 2);
-				// Remove "(*)" at the end of the value
-				Pattern languageCodePattern = Pattern.compile("\\s*\\((?i:" +
-						Arrays.stream(Language.values())
-								.map(Language::name)
-								.collect(Collectors.joining("|")) +
-						")\\)$");
-
-				selectedValue = languageCodePattern.matcher(selectedValue).replaceAll("");
-				selectedValues.add(selectedValue);
-			}
-
-			DeepLService.translateTextList(selectedValues, "auto",
-					editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 0).toString());
-
-			TranslationKeyManager translationKeyManager = new TranslationKeyManager();
-
-			// Update the Value in the file
-			try {
-				translationKeyManager.updateKeyInFile(editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 0).toString(),
-						editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 1).toString(), selectedValues.get(0),
-						editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 3).toString());
-			} catch (IOException ex) {
-				throw new RuntimeException(ex);
-			}
-
-			// Update the value in the Dialog table
-			translationKeyManager.updateColumnValue(editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 0).toString(),
-					editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 1).toString(), selectedValues.get(0), editDialogTableModel);
-
-			// Update the value in the main table
-			TranslationCheckerApp app = new TranslationCheckerApp();
-			JTable mainTable = app.getTable();
-			DefaultTableModel mainTableModel = app.getTableModel();
-
-			translationKeyManager.updateColumnValue(mainTable.getValueAt(mainTable.getSelectedRow(), 0).toString(),
-					mainTable.getValueAt(mainTable.getSelectedRow(), 1).toString(), selectedValues.get(0), mainTableModel);
+			TranslationManager translationManager = new TranslationManager(editDialogTable, editDialogTableModel, translateButtons);
+			translationManager.addTranslateButtonListener();
 
 		});
 		southPanel.add(translateButtons, BorderLayout.LINE_START);

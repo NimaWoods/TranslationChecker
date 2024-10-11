@@ -1,15 +1,9 @@
 package com.gui.services;
 
-import static java.util.stream.Collectors.toList;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import com.cybozu.labs.langdetect.Detector;
+import com.cybozu.labs.langdetect.DetectorFactory;
+import com.cybozu.labs.langdetect.LangDetectException;
+import com.gui.manager.SettingsManager;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -22,10 +16,15 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
-import com.cybozu.labs.langdetect.Detector;
-import com.cybozu.labs.langdetect.DetectorFactory;
-import com.cybozu.labs.langdetect.LangDetectException;
-import com.gui.contsants.Constants;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static java.util.stream.Collectors.toList;
 
 public class DeepLService {
 
@@ -124,7 +123,10 @@ public class DeepLService {
 				sourceLanguage = detectLanguage(text);
 		}
 
-		final HttpPost httppost = new HttpPost("https://api-free.deepl.com/v2/translate?auth_key=" + Constants.DEEPL_AUTH_KEY.getValue());
+		SettingsManager settingsManager = new SettingsManager();
+		String authKey = settingsManager.getSettings().getProperty("api.key");
+
+		final HttpPost httppost = new HttpPost("https://api-free.deepl.com/v2/translate?auth_key=" + authKey);
 
 		// Hinzufügen der Header
 		httppost.addHeader(HttpHeaders.HOST, "api-free.deepl.com");
@@ -134,7 +136,7 @@ public class DeepLService {
 
 		// Parameter der Anfrage
 		final List<NameValuePair> params = new ArrayList<>();
-		params.add(new BasicNameValuePair("auth_key", Constants.DEEPL_AUTH_KEY.getValue()));
+		params.add(new BasicNameValuePair("auth_key", authKey));
 		params.add(new BasicNameValuePair("text", text));
 		params.add(new BasicNameValuePair("source_lang", sourceLanguage));
 		params.add(new BasicNameValuePair("target_lang", targetLanguage));

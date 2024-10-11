@@ -14,12 +14,8 @@ public class SettingsDialog {
 		return basePathField.getText();
 	}
 
-	public String getLanguagesField() {
-		return languagesField.getText();
-	}
-
-	public JTextField getApiKeyField() {
-		return apiKeyField;
+	public String getApiKeyField() {
+		return apiKeyField.getText();
 	}
 
 	public boolean isSearchUnsetOnlyCheckboxSelected() {
@@ -29,7 +25,6 @@ public class SettingsDialog {
 	private JTextField basePathField;
 
 	private JTextField apiKeyField;
-	private JTextField languagesField;
 	private JCheckBox searchUnsetOnlyCheckbox;
 	private JCheckBox convertFilesCheckbox;
 

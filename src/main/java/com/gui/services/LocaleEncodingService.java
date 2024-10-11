@@ -1,5 +1,7 @@
 package com.gui.services;
 
+import com.gui.contsants.LanguagesConstant;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -14,19 +16,17 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.gui.contsants.Language;
-
 public class LocaleEncodingService {
 
     Logger logger = Logger.getLogger(LocaleEncodingService.class.getName());
 
-    public static Language getLocaleWithEncoding(String lang) {
-        for (Language locale : Language.values()) {
+    public static LanguagesConstant getLocaleWithEncoding(String lang) {
+        for (LanguagesConstant locale : LanguagesConstant.values()) {
             if (locale.getLocale().getLanguage().equals(lang)) {
                 return locale;
             }
         }
-        return Language.GERMAN;
+        return LanguagesConstant.GERMAN;
     }
 
     private Charset getFileEncoding(Path path, Charset defaultEncoding) {

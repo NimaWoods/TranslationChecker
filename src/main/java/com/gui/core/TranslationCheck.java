@@ -1,5 +1,15 @@
 package com.gui.core;
 
+import com.gui.TranslationCheckerApp;
+import com.gui.contsants.LanguagesConstant;
+import com.gui.manager.SettingsManager;
+import com.gui.model.LanguageProperties;
+import com.gui.services.FileEncodingConverter;
+import com.gui.services.LocaleEncodingService;
+import com.gui.ui.ConvertedFilesDialog;
+import com.gui.ui.FileWarningDialog;
+
+import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -8,30 +18,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import javax.swing.JOptionPane;
-import javax.swing.JProgressBar;
-import javax.swing.SwingWorker;
-
-import com.gui.TranslationCheckerApp;
-import com.gui.contsants.Language;
-import com.gui.manager.SettingsManager;
-import com.gui.model.LanguageProperties;
-import com.gui.services.FileEncodingConverter;
-import com.gui.services.LocaleEncodingService;
-import com.gui.ui.ConvertedFilesDialog;
-import com.gui.ui.FileWarningDialog;
 
 public class TranslationCheck {
 
@@ -47,7 +39,7 @@ public class TranslationCheck {
 	public TranslationCheck(JProgressBar progressBar, TranslationCheckerApp app) {
 		this.settings = settingsDAO.getSettings();
 		this.progressBar = progressBar;
-		this.LANGUAGES = Arrays.stream(settings.getProperty("languages").split(",")).toArray(String[]::new);
+		this.LANGUAGES = Arrays.stream(LanguagesConstant.values()).map(LanguagesConstant::name).toArray(String[]::new);
 		this.BASE_PATH = settings.getProperty("base.path");
 		this.translationCheckerApp = app;
 	}
@@ -73,7 +65,7 @@ public class TranslationCheck {
 				progressBar.setValue(0);
 				progressBar.setVisible(true);
 
-				Map<Language, List<LanguageProperties>> propertiesMap = new HashMap<>();
+				Map<LanguagesConstant, List<LanguageProperties>> propertiesMap = new HashMap<>();
 				List<String[]> convertedFiles = new ArrayList<>();
 
 				boolean searchUnsetOnly = Boolean.parseBoolean(settings.getProperty("search.unset.only", "false"));
@@ -88,7 +80,7 @@ public class TranslationCheck {
 				}
 
 				// Iterate over all languages names
-				for (Language lang : Language.values()) {
+				for (LanguagesConstant lang : LanguagesConstant.values()) {
 
 					Charset inputEncoding;
 					if (lang == null) {
@@ -144,7 +136,7 @@ public class TranslationCheck {
 				}
 
 				if (message.contains("Input length =")) {
-					boolean encodingExists = Arrays.stream(Language.values())
+					boolean encodingExists = Arrays.stream(LanguagesConstant.values())
 							.anyMatch(lang -> lang.getEncoding().equals(inputEncoding));
 					if (!encodingExists) {
 						unreadableFiles.put(path, "Encoding not supported: " + inputEncoding + " (" + message + ")");
@@ -177,7 +169,7 @@ public class TranslationCheck {
 	}
 
 	// Helper method to search for properties files
-	private List<Path> findAllPropertiesFiles(String basePath, Language lang) throws IOException {
+	private List<Path> findAllPropertiesFiles(String basePath, LanguagesConstant lang) throws IOException {
 
 		// Verwende lang.getLocale().getLanguage() anstelle von getLocale().toString()
 		String prefix = "messages_" + lang.getLocale().getLanguage();

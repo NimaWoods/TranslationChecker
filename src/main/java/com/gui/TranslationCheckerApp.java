@@ -1,8 +1,17 @@
 package com.gui;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.FlowLayout;
+import com.gui.contsants.LanguagesConstant;
+import com.gui.core.TranslationCheck;
+import com.gui.manager.SettingsManager;
+import com.gui.model.LanguageProperties;
+import com.gui.ui.EditTranslationsDialog;
+import com.gui.ui.SettingsDialog;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableRowSorter;
+import java.awt.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,31 +19,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.RowSorter;
-import javax.swing.SortOrder;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableRowSorter;
-
-import com.gui.contsants.Language;
-import com.gui.core.TranslationCheck;
-import com.gui.manager.SettingsManager;
-import com.gui.model.LanguageProperties;
-import com.gui.ui.EditTranslationsDialog;
-import com.gui.ui.SettingsDialog;
 
 public class TranslationCheckerApp extends JFrame {
 
@@ -95,7 +79,7 @@ public class TranslationCheckerApp extends JFrame {
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setLocationRelativeTo(null);
 
-		String[] columnNames = {"Language", "Key", "Value", "File Path"};
+		String[] columnNames = {"LanguagesConstant", "Key", "Value", "File Path"};
 		tableModel = new DefaultTableModel(columnNames, 0) {
 			@Override
 			public boolean isCellEditable(int row, int column) {
@@ -188,13 +172,13 @@ public class TranslationCheckerApp extends JFrame {
 		}
 	}
 
-	public void updateTable(Map<Language, List<LanguageProperties>> propertiesMap, boolean searchUnsetOnly, String[] LANGUAGES) {
+	public void updateTable(Map<LanguagesConstant, List<LanguageProperties>> propertiesMap, boolean searchUnsetOnly, String[] LANGUAGES) {
 		tableModel.setRowCount(0);
 
 		Pattern languageCodePattern = Pattern.compile(".*\\((" + String.join("|", LANGUAGES) + ")\\)$");
 		int totalEntries = 0;
 
-		for (Language lang : propertiesMap.keySet()) {
+		for (LanguagesConstant lang : propertiesMap.keySet()) {
 			List<LanguageProperties> languageFiles = propertiesMap.get(lang);
 
 			for (LanguageProperties languageProps : languageFiles) {

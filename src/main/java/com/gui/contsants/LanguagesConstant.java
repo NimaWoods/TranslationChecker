@@ -4,7 +4,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
-public enum Language {
+public enum LanguagesConstant {
 	GERMAN(Locale.GERMAN, StandardCharsets.ISO_8859_1),
 	ENGLISH(Locale.ENGLISH, StandardCharsets.ISO_8859_1),
 	FRENCH(Locale.FRENCH, StandardCharsets.ISO_8859_1),
@@ -18,7 +18,7 @@ public enum Language {
 	private final Locale locale;
 	private final Charset encoding;
 
-	Language(Locale locale, Charset encoding) {
+	LanguagesConstant(Locale locale, Charset encoding) {
 		this.locale = locale;
 		this.encoding = encoding;
 	}

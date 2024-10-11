@@ -39,7 +39,6 @@ public class SettingsManager {
 
 	private void createDefaultSettings(Path settingsPath) {
 		settings.setProperty("base.path", "path_to_project");
-		settings.setProperty("languages", "de,en,es,fr,hu,it,nl,ru");
 
 		try (OutputStream output = Files.newOutputStream(settingsPath)) {
 			settings.store(output, "Default settings");
@@ -52,8 +51,8 @@ public class SettingsManager {
 
 	public void saveSettings(Properties settings, JDialog dialog, SettingsDialog settingsDialog) {
 		String basePathField = settingsDialog.getBasePathField();
-		String languagesField = settingsDialog.getLanguagesField();
 		String searchUnsetOnlyCheckbox = Boolean.toString(settingsDialog.isSearchUnsetOnlyCheckboxSelected());
+		String apiKeyField = String.valueOf(settingsDialog.getApiKeyField());
 		String convertFilesCheckbox = Boolean.toString(settingsDialog.isConvertFilesCheckboxSelected());
 
 		Path BASE_PATH = Path.of(basePathField);
@@ -66,8 +65,8 @@ public class SettingsManager {
 		}
 
 		settings.setProperty("base.path", basePathField);
-		settings.setProperty("languages", languagesField);
 		settings.setProperty("search.unset.only", searchUnsetOnlyCheckbox);
+		settings.setProperty("api.key", apiKeyField);
 		settings.setProperty("convert.files", convertFilesCheckbox);
 
 		try (OutputStream output = Files.newOutputStream(Paths.get("settings.properties"))) {

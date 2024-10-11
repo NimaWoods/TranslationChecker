@@ -488,14 +488,14 @@ public class TranslationApplication {
         return pathField;
     }
 
-    // Language dropdown menu
+    // LanguagesConstant dropdown menu
     private static JComboBox<LocaleWithEncoding> getLanguageComboBox(GridBagConstraints gbc, int gridy, JPanel panel) {
 
         JComboBox<LocaleWithEncoding> comboBox = new JComboBox<>(LocaleWithEncoding.values());
         gbc.gridx = 0;
         gbc.gridy = gridy;
         gbc.gridwidth = 1;
-        panel.add(new JLabel("Language:"), gbc);
+        panel.add(new JLabel("LanguagesConstant:"), gbc);
 
         gbc.gridx = 1;
         gbc.gridy = gridy;
