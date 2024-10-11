@@ -41,6 +41,23 @@ public class TranslationCheckerApp extends JFrame {
 	private static final Logger logger = Logger.getLogger(TranslationCheckerApp.class.getName());
 
 	private JTable table;
+
+	public JTable getTable() {
+		return table;
+	}
+
+	public void setTable(JTable table) {
+		this.table = table;
+	}
+
+	public DefaultTableModel getTableModel() {
+		return tableModel;
+	}
+
+	public void setTableModel(DefaultTableModel tableModel) {
+		this.tableModel = tableModel;
+	}
+
 	private DefaultTableModel tableModel;
 	private JProgressBar progressBar;
 	private JLabel statusLabel;

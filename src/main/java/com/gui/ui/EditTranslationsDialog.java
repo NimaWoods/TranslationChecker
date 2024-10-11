@@ -6,13 +6,19 @@ import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -20,7 +26,10 @@ import javax.swing.KeyStroke;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableModel;
 
+import com.gui.TranslationCheckerApp;
+import com.gui.contsants.Language;
 import com.gui.manager.TranslationKeyManager;
+import com.gui.services.DeepLService;
 import com.gui.services.LocaleEncodingService;
 
 public class EditTranslationsDialog {
@@ -80,8 +89,7 @@ public class EditTranslationsDialog {
 		editDialogTable.getColumnModel().getColumn(2).setPreferredWidth(400);
 		editDialogTable.getColumnModel().getColumn(3).setPreferredWidth(150);
 
-		editDialogTable.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
-				.put(KeyStroke.getKeyStroke("ENTER"), "saveEditing");
+		editDialogTable.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke("ENTER"), "saveEditing");
 		editDialogTable.getActionMap().put("saveEditing", new AbstractAction() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -91,8 +99,8 @@ public class EditTranslationsDialog {
 			}
 		});
 
-		translationsWithPaths.forEach((language, details) ->
-				editDialogTableModel.addRow(new Object[] { language, key, details[0], details[1] }));
+		translationsWithPaths.forEach(
+				(language, details) -> editDialogTableModel.addRow(new Object[] { language, key, details[0], details[1] }));
 
 		JScrollPane scrollPane = new JScrollPane(editDialogTable);
 		JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
@@ -101,9 +109,70 @@ public class EditTranslationsDialog {
 
 		registerTableModelListenerForEditValue(editDialogTableModel);
 
-		JButton closeButton = new JButton("Close");
-		closeButton.addActionListener(e -> dialog.dispose());
-		dialog.add(closeButton, BorderLayout.SOUTH);
+		JPanel southPanel = new JPanel(new BorderLayout());
+
+		JButton translateButtons = new JButton("Translate");
+		translateButtons.addActionListener(e -> {
+
+			// Get selected row from the table
+			List<String> selectedValues = new ArrayList<>();
+
+			if (editDialogTable.getSelectedRowCount() > 1) {
+				int[] selectedRowsInEditDialog = editDialogTable.getSelectedRows();
+				for (int selectedRowInEditDialog : selectedRowsInEditDialog) {
+					String selectedValue = (String) editDialogTable.getValueAt(selectedRowInEditDialog, 2);
+					selectedValues.add(selectedValue);
+				}
+			} else {
+				int selectedRowInEditDialog = editDialogTable.getSelectedRow();
+				if (selectedRowInEditDialog == -1) {
+					JOptionPane.showMessageDialog(null, "Please select a row to translate.");
+					return;
+				}
+
+				String selectedValue = (String) editDialogTable.getValueAt(selectedRowInEditDialog, 2);
+				// Remove "(*)" at the end of the value
+				Pattern languageCodePattern = Pattern.compile("\\s*\\((?i:" +
+						Arrays.stream(Language.values())
+								.map(Language::name)
+								.collect(Collectors.joining("|")) +
+						")\\)$");
+
+				selectedValue = languageCodePattern.matcher(selectedValue).replaceAll("");
+				selectedValues.add(selectedValue);
+			}
+
+			DeepLService.translateTextList(selectedValues, "auto",
+					editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 0).toString());
+
+			TranslationKeyManager translationKeyManager = new TranslationKeyManager();
+
+			// Update the Value in the file
+			try {
+				translationKeyManager.updateKeyInFile(editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 0).toString(),
+						editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 1).toString(), selectedValues.get(0),
+						editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 3).toString());
+			} catch (IOException ex) {
+				throw new RuntimeException(ex);
+			}
+
+			// Update the value in the Dialog table
+			translationKeyManager.updateColumnValue(editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 0).toString(),
+					editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 1).toString(), selectedValues.get(0), editDialogTableModel);
+
+			// Update the value in the main table
+			TranslationCheckerApp app = new TranslationCheckerApp();
+			JTable mainTable = app.getTable();
+			DefaultTableModel mainTableModel = app.getTableModel();
+
+			translationKeyManager.updateColumnValue(mainTable.getValueAt(mainTable.getSelectedRow(), 0).toString(),
+					mainTable.getValueAt(mainTable.getSelectedRow(), 1).toString(), selectedValues.get(0), mainTableModel);
+
+		});
+		southPanel.add(translateButtons, BorderLayout.LINE_START);
+
+
+		dialog.add(southPanel, BorderLayout.SOUTH);
 
 		dialog.setSize(800, 400);
 		dialog.setLocationRelativeTo(null);

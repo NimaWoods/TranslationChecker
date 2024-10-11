@@ -1,31 +1,37 @@
 package com.gui.services;
 
-import com.gui.contsants.Constants;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.ParseException;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.http.message.BasicNameValuePair;
-import org.json.JSONObject;
+import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.util.stream.Collectors.toList;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpHeaders;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.message.BasicNameValuePair;
+import org.json.JSONObject;
+
+import com.cybozu.labs.langdetect.Detector;
+import com.cybozu.labs.langdetect.DetectorFactory;
+import com.cybozu.labs.langdetect.LangDetectException;
+import com.gui.contsants.Constants;
 
 public class DeepLService {
 
 	private static final Logger logger = Logger.getLogger(DeepLService.class.getName());
 	private static CloseableHttpClient HTTPCLIENT;
+	private static boolean profilesLoaded;
 
 	private static CloseableHttpClient getHttpClient() {
 		if (HTTPCLIENT == null) {
@@ -41,6 +47,19 @@ public class DeepLService {
 			} catch (IOException e) {
 				logger.log(Level.SEVERE, "Error closing HttpClient", e);
 			}
+		}
+	}
+
+	public DeepLService () {
+		getHttpClient();
+	}
+
+	public static void main(String[] args) {
+		try {
+			String result = translateString("Hello World", "EN", "DE");
+			System.out.println("Translated text: " + result);
+		} catch (IOException | ParseException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -100,38 +119,70 @@ public class DeepLService {
 	 * @return The translated text.
 	 */
 	private static String translateString(String text, String sourceLanguage, String targetLanguage) throws IOException, ParseException {
-		final HttpPost httppost = new HttpPost("https://api-free.deepl.com/v2/translate");
 
-		httppost.addHeader("Authorization", "DeepL-Auth-Key " + Constants.DEEPL_AUTH_KEY.getValue());
+		if (sourceLanguage.equals("auto")) {
+				sourceLanguage = detectLanguage(text);
+		}
 
-		final List<BasicNameValuePair> params = new ArrayList<>();
+		final HttpPost httppost = new HttpPost("https://api-free.deepl.com/v2/translate?auth_key=" + Constants.DEEPL_AUTH_KEY.getValue());
+
+		// Hinzufügen der Header
+		httppost.addHeader(HttpHeaders.HOST, "api-free.deepl.com");
+		httppost.addHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:66.0) Gecko/20100101 Firefox/66.0");
+		httppost.addHeader(HttpHeaders.ACCEPT, "*/*");
+		httppost.addHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
+
+		// Parameter der Anfrage
+		final List<NameValuePair> params = new ArrayList<>();
+		params.add(new BasicNameValuePair("auth_key", Constants.DEEPL_AUTH_KEY.getValue()));
 		params.add(new BasicNameValuePair("text", text));
 		params.add(new BasicNameValuePair("source_lang", sourceLanguage));
 		params.add(new BasicNameValuePair("target_lang", targetLanguage));
 
+		// Setzen der Parameter in den Http-Post-Request
 		httppost.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8));
 
+		// Ausführen der Anfrage und erhalten der Antwort
 		HttpEntity entity = getHttpClient().execute(httppost).getEntity();
 
 		if (entity != null) {
-			JSONObject response = new JSONObject(EntityUtils.toString(entity));
-			return ((JSONObject) response.getJSONArray("translations").get(0)).getString("text");
+			// Konvertieren der Antwort in einen JSON-String
+			String responseString = EntityUtils.toString(entity);
+			JSONObject response = new JSONObject(responseString);
+
+			// Rückgabe des übersetzten Textes aus der JSON-Antwort
+			return response.getJSONArray("translations").getJSONObject(0).getString("text");
 		}
 
+		// Falls keine gültige Antwort vorliegt, gib den Originaltext zurück
 		return text;
 	}
 
-	public static void main(String[] args) {
-		Properties properties = new Properties();
-		properties.setProperty("welcome.message", "Welcome to our website");
-		properties.setProperty("goodbye.message", "Thank you for visiting");
-
-		Properties translatedProperties = translateProperties(properties, "EN", "DE");
-
-		for (Map.Entry<Object, Object> entry : translatedProperties.entrySet()) {
-			System.out.println(entry.getKey() + ": " + entry.getValue());
+	/**
+	 * Detects the language of the given text using Apache Tika.
+	 *
+	 * @param text The text whose language is to be detected.
+	 * @return The detected language code (e.g., "en" for English, "de" for German).
+	 */
+	public static String detectLanguage(String text) {
+		// Profile nur laden, wenn sie noch nicht geladen wurden
+		if (!profilesLoaded) {
+			try {
+				DetectorFactory.loadProfile("src/main/java/com/gui/profiles");
+				profilesLoaded = true;
+			} catch (LangDetectException e) {
+				logger.log(Level.SEVERE, "Error loading language profiles", e);
+				return null;
+			}
 		}
 
-		closeHttpClient();
+		try {
+			Detector detector = DetectorFactory.create();
+			detector.append(text);
+			return detector.detect();
+		} catch (LangDetectException e) {
+			logger.log(Level.SEVERE, "Error detecting language", e);
+			return null;
+		}
 	}
 }
