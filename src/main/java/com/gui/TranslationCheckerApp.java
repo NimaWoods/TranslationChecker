@@ -1,16 +1,8 @@
 package com.gui;
 
-import com.gui.contsants.Language;
-import com.gui.core.TranslationCheck;
-import com.gui.manager.SettingsManager;
-import com.gui.model.LanguageProperties;
-import com.gui.ui.SettingsDialog;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableRowSorter;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +10,31 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.RowSorter;
+import javax.swing.SortOrder;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableRowSorter;
+
+import com.gui.contsants.Language;
+import com.gui.core.TranslationCheck;
+import com.gui.manager.SettingsManager;
+import com.gui.model.LanguageProperties;
+import com.gui.ui.EditTranslationsDialog;
+import com.gui.ui.SettingsDialog;
 
 public class TranslationCheckerApp extends JFrame {
 
@@ -107,6 +124,10 @@ public class TranslationCheckerApp extends JFrame {
 		});
 
 		JButton allTranslationsButton = new JButton("Edit Translations");
+		allTranslationsButton.addActionListener(e -> {
+					EditTranslationsDialog editTranslationsDialog = new EditTranslationsDialog(table, tableModel);
+					editTranslationsDialog.show();
+				});
 
 		JTextField searchField = new JTextField(20);
 		JButton searchButton = new JButton("Search");
