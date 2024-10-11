@@ -64,15 +64,20 @@ public class TranslationManager {
 						selectedValues.add(selectedValue);
 					}
 
-					// Call the translation service (background task)
-					DeepLService.translateTextList(selectedValues, "auto",
-							editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 0).toString());
+					String language = editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 0).toString();
+					String key = editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 1).toString();
+					// TODO Multi Selection Support
+					String newValue = DeepLService.translateTextList(selectedValues, "auto", language).get(0);
+					String filePath = editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 3).toString();
+
+					TranslationCheckerApp app = new TranslationCheckerApp();
+					DefaultTableModel mainTableModel = app.getTableModel();
 
 					// Update the Value in the file
 					TranslationKeyManager translationKeyManager = new TranslationKeyManager();
-					translationKeyManager.updateKeyInFile(editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 0).toString(),
-							editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 1).toString(), selectedValues.get(0),
-							editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 3).toString());
+					translationKeyManager.updateKeyInFile(language, key, newValue, filePath); // Update the value in the file
+					translationKeyManager.updateColumnValue(language, key, newValue, editDialogTableModel); // Update the value in the table
+					translationKeyManager.updateColumnValue(language, key, newValue, mainTableModel); // Update the value in the main table
 
 					return null;
 				}
@@ -82,17 +87,9 @@ public class TranslationManager {
 					try {
 						get();
 
-						TranslationKeyManager translationKeyManager = new TranslationKeyManager();
-						translationKeyManager.updateColumnValue(editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 0).toString(),
-								editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 1).toString(), selectedValues.get(0), editDialogTableModel);
-
-						TranslationCheckerApp app = new TranslationCheckerApp();
-						JTable mainTable = app.getTable();
-						DefaultTableModel mainTableModel = app.getTableModel();
-						translationKeyManager.updateColumnValue(mainTable.getValueAt(mainTable.getSelectedRow(), 0).toString(),
-								mainTable.getValueAt(mainTable.getSelectedRow(), 1).toString(), selectedValues.get(0), mainTableModel);
 					} catch (Exception ex) {
 						JOptionPane.showMessageDialog(null, "Error during translation: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+						System.out.printf("Error during translation: %s%n", ex.getMessage());
 					} finally {
 						DeepLService.closeHttpClient();  // Close the HttpClient
 						translateButtons.setEnabled(true);

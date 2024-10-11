@@ -1,0 +1,1 @@
+https://github.com/shuyo/language-detection/tree/master/profiles

@@ -49,7 +49,7 @@ public class DeepLService {
 		}
 	}
 
-	public DeepLService () {
+	public DeepLService() {
 		getHttpClient();
 	}
 
@@ -65,9 +65,9 @@ public class DeepLService {
 	/**
 	 * Translates the given Properties object using DeepL API.
 	 *
-	 * @param properties      The Properties object containing key-value pairs to be translated.
-	 * @param sourceLanguage  The source language code (e.g., "EN", "DE").
-	 * @param targetLanguage  The target language code (e.g., "EN", "DE").
+	 * @param properties     The Properties object containing key-value pairs to be translated.
+	 * @param sourceLanguage The source language code (e.g., "EN", "DE").
+	 * @param targetLanguage The target language code (e.g., "EN", "DE").
 	 * @return A new Properties object containing the translated key-value pairs.
 	 */
 	public static Properties translateProperties(Properties properties, String sourceLanguage, String targetLanguage) {
@@ -88,9 +88,9 @@ public class DeepLService {
 	/**
 	 * Translates a list of strings using the DeepL API.
 	 *
-	 * @param textList        The list of strings to be translated.
-	 * @param sourceLanguage  The source language code.
-	 * @param targetLanguage  The target language code.
+	 * @param textList       The list of strings to be translated.
+	 * @param sourceLanguage The source language code.
+	 * @param targetLanguage The target language code.
 	 * @return A list of translated strings.
 	 */
 	public static List<String> translateTextList(List<String> textList, String sourceLanguage, String targetLanguage) {
@@ -112,15 +112,15 @@ public class DeepLService {
 	/**
 	 * Translates a single string using the DeepL API.
 	 *
-	 * @param text            The text to be translated.
-	 * @param sourceLanguage  The source language code.
-	 * @param targetLanguage  The target language code.
+	 * @param text           The text to be translated.
+	 * @param sourceLanguage The source language code.
+	 * @param targetLanguage The target language code.
 	 * @return The translated text.
 	 */
 	private static String translateString(String text, String sourceLanguage, String targetLanguage) throws IOException, ParseException {
 
 		if (sourceLanguage.equals("auto")) {
-				sourceLanguage = detectLanguage(text);
+			sourceLanguage = detectLanguage(text);
 		}
 
 		SettingsManager settingsManager = new SettingsManager();
@@ -167,15 +167,14 @@ public class DeepLService {
 	 * @return The detected language code (e.g., "en" for English, "de" for German).
 	 */
 	public static String detectLanguage(String text) {
-		// Profile nur laden, wenn sie noch nicht geladen wurden
-		if (!profilesLoaded) {
-			try {
-				DetectorFactory.loadProfile("src/main/java/com/gui/profiles");
-				profilesLoaded = true;
-			} catch (LangDetectException e) {
-				logger.log(Level.SEVERE, "Error loading language profiles", e);
-				return null;
-			}
+		// Überprüfen, ob die Sprachprofile bereits geladen wurden
+		try {
+			DetectorFactory.loadProfile("src/main/java/com/gui/profiles");
+			logger.info("Successfully loaded profiles. Loaded " + DetectorFactory.getLangList().size() + " profiles.");
+			profilesLoaded = true;
+		} catch (LangDetectException e) {
+			logger.log(Level.SEVERE, "Error loading language profiles", e);
+			return null;
 		}
 
 		try {
