@@ -189,10 +189,10 @@ public class TranslationCheckerApp extends JFrame {
 
 					if (searchUnsetOnly) {
 						if (languageCodePattern.matcher(value).matches()) {
-							tableModel.addRow(new Object[]{lang.getLocale(), key, " ", filePath.toString()});
+							tableModel.addRow(new Object[]{lang.getLocale(), key, value, filePath.toString()});
 							totalEntries++;
 						} else if (value.isEmpty()) {
-							tableModel.addRow(new Object[]{lang.getLocale(), key, value, filePath.toString()});
+							tableModel.addRow(new Object[]{lang.getLocale(), key, " ", filePath.toString()});
 							totalEntries++;
 						}
 					} else {

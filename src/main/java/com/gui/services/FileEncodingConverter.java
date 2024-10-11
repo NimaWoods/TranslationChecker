@@ -1,6 +1,17 @@
 package com.gui.services;
 
-import java.io.*;
+import static com.gui.services.LocaleEncodingService.getLocaleWithEncoding;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,13 +21,12 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.gui.services.LocaleEncodingService.getLocaleWithEncoding;
-
 public class FileEncodingConverter {
 
     static Logger logger = Logger.getLogger(FileEncodingConverter.class.getName());
 
     final Map<Path, String> unreadableFiles = new HashMap<>();
+
     public Map<Path, String> getUnreadableFiles() {
         return unreadableFiles;
     }
@@ -52,13 +62,6 @@ public class FileEncodingConverter {
                 logger.log(Level.WARNING, "Failed to delete temp file: {0}", tempFile.getAbsolutePath());
             }
         }
-    }
-
-    public static String convertPath(String path) {
-
-		return path
-				.replace("\\", "/");
-
     }
 
     public Path convertFile(String lang, Path path, boolean convertFiles, Charset inputEncoding, List<String[]> convertedFiles) {

@@ -1,14 +1,5 @@
 package com.gui.core;
 
-import com.gui.TranslationCheckerApp;
-import com.gui.contsants.Language;
-import com.gui.manager.SettingsManager;
-import com.gui.model.LanguageProperties;
-import com.gui.services.FileEncodingConverter;
-import com.gui.ui.ConvertedFilesDialog;
-import com.gui.ui.FileWarningDialog;
-
-import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -17,12 +8,30 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.swing.JOptionPane;
+import javax.swing.JProgressBar;
+import javax.swing.SwingWorker;
+
+import com.gui.TranslationCheckerApp;
+import com.gui.contsants.Language;
+import com.gui.manager.SettingsManager;
+import com.gui.model.LanguageProperties;
+import com.gui.services.FileEncodingConverter;
+import com.gui.services.LocaleEncodingService;
+import com.gui.ui.ConvertedFilesDialog;
+import com.gui.ui.FileWarningDialog;
 
 public class TranslationCheck {
 
@@ -57,7 +66,7 @@ public class TranslationCheck {
 
 	private SwingWorker<Void, Integer> createSwingWorker() {
 		return new SwingWorker<>() {
-			Map<Path, String> unreadableFiles = new HashMap<>();
+			final Map<Path, String> unreadableFiles = new HashMap<>();
 
 			@Override
 			protected Void doInBackground() throws Exception {
@@ -97,15 +106,16 @@ public class TranslationCheck {
 
 						FileEncodingConverter converter = new FileEncodingConverter();
 						path = converter.convertFile(lang.name(), path, convertFiles, inputEncoding, convertedFiles);
-						unreadableFiles = converter.getUnreadableFiles();
+						unreadableFiles.putAll(converter.getUnreadableFiles());
 
 						try (BufferedReader reader = Files.newBufferedReader(path, inputEncoding)) {
 							properties.load(reader);
 							for (String key : properties.stringPropertyNames()) {
 								String value = properties.getProperty(key);
+								System.out.println("Loaded key: " + key + " with value: " + value);
 							}
-						} catch (IOException e) {
-							handleFileError(path, e, unreadableFiles, inputEncoding);
+						} catch (Exception e) {
+							handleFileError(path, e, unreadableFiles, inputEncoding, lang.getLocale().getLanguage());
 						}
 
 						propertiesMap.computeIfAbsent(lang, k -> new ArrayList<>())
@@ -126,30 +136,44 @@ public class TranslationCheck {
 				return null;
 			}
 
+			private void handleFileError(Path path, Exception e, Map<Path, String> unreadableFiles, Charset inputEncoding, String language) {
+				String message = e.getMessage();
+
+				if (message == null || message.isEmpty()) {
+					message = "Unknown error: " + e.getClass().getSimpleName();
+				}
+
+				if (message.contains("Input length =")) {
+					boolean encodingExists = Arrays.stream(Language.values())
+							.anyMatch(lang -> lang.getEncoding().equals(inputEncoding));
+					if (!encodingExists) {
+						unreadableFiles.put(path, "Encoding not supported: " + inputEncoding + " (" + message + ")");
+					} else if (!inputEncoding.equals(LocaleEncodingService.getLocaleWithEncoding(language).getEncoding())) {
+						unreadableFiles.put(path, "Wrong encoding detected: " + inputEncoding);
+					} else {
+						unreadableFiles.put(path, "Malformed input detected: " + message + " (Encoding: " + inputEncoding + ")");
+					}
+				} else {
+					unreadableFiles.put(path, message);
+				}
+			}
+
 			@Override
 			protected void done() {
 				progressBar.setVisible(false);
 				setProgress(0);
 				try {
 					get();
+
+					if (!unreadableFiles.isEmpty()) {
+						FileWarningDialog.show(unreadableFiles);
+					}
+
 				} catch (InterruptedException | ExecutionException e) {
 					logger.log(Level.SEVERE, "Error in SwingWorker", e);
 				}
-
-				if (!unreadableFiles.isEmpty()) {
-					FileWarningDialog.show(unreadableFiles);
-				}
 			}
 		};
-	}
-
-	private void handleFileError(Path path, IOException e, Map<Path, String> unreadableFiles, Charset inputEncoding) {
-		String message = e.getMessage();
-		if (message != null && message.contains("Input length =")) {
-			unreadableFiles.put(path, "Malformed input detected: " + message);
-		} else {
-			unreadableFiles.put(path, message);
-		}
 	}
 
 	// Helper method to search for properties files

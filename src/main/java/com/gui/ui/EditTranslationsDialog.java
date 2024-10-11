@@ -4,11 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Map;
 
 import javax.swing.AbstractAction;
@@ -23,8 +20,7 @@ import javax.swing.KeyStroke;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableModel;
 
-import com.gui.TranslationCheckerApp;
-import com.gui.contsants.Language;
+import com.gui.manager.TranslationKeyManager;
 import com.gui.services.LocaleEncodingService;
 
 public class EditTranslationsDialog {
@@ -139,15 +135,16 @@ public class EditTranslationsDialog {
 					String filePath = (String) model.getValueAt(modelRow, 3);
 
 					// Aktualisiere den Key in der Datei
+					TranslationKeyManager translationKeyManager = new TranslationKeyManager();
 					try {
-						updateKeyInFile(language, key, newValue, filePath);
+						translationKeyManager.updateKeyInFile(language, key, newValue, filePath);
 					} catch (IOException ex) {
 						throw new RuntimeException(ex);
 					}
 
 					// Synchronisiere den Wert im Edit Dialog auch in der Haupttablle
 					if (model != tableModel) {
-						updateColumnValue(language, key, newValue);
+						translationKeyManager.updateColumnValue(language, key, newValue, tableModel);
 					}
 				}
 			}
@@ -161,53 +158,5 @@ public class EditTranslationsDialog {
 			return editDialogTable;
 		}
 		return null;
-	}
-
-	// Methode, um den Wert in der Haupttabelle zu aktualisieren, wenn er im Edit-Dialog geändert wurde
-	private void updateColumnValue(String language, String key, String newValue) {
-		for (int row = 0; row < tableModel.getRowCount(); row++) {
-			String tableLanguage = tableModel.getValueAt(row, 0).toString();
-			String tableKey = tableModel.getValueAt(row, 1).toString();
-
-			if (tableLanguage.equals(language) && tableKey.equals(key)) {
-				tableModel.setValueAt(newValue, row, 2);
-				break;
-			}
-		}
-	}
-
-	private void updateKeyInFile(String language, String key, String newValue, String filePath) throws IOException {
-		Path path = Path.of(filePath);
-		Charset encoding = LocaleEncodingService.getLocaleWithEncoding(language).getEncoding();
-
-		// Lese alle Zeilen der Datei
-		List<String> lines = Files.readAllLines(path, encoding);
-		boolean keyFound = false;
-
-		// Gehe durch jede Zeile und ersetze die Zeile, die den Key enthält
-		for (int i = 0; i < lines.size(); i++) {
-			String line = lines.get(i).trim();
-			if (line.startsWith(key + "=")) {
-				lines.set(i, key + "=" + newValue); // Aktualisiere die Zeile mit dem neuen Wert
-				keyFound = true;
-				break; // Sobald der Key gefunden und aktualisiert wurde, verlasse die Schleife
-			}
-		}
-
-		if (!keyFound) {
-			// Füge den neuen Schlüssel hinzu, falls er nicht vorhanden ist
-			lines.add(key + "=" + newValue);
-		}
-
-		// Schreibe die geänderten Zeilen zurück in die Datei
-		Files.write(path, lines, encoding);
-
-		TranslationCheckerApp app = new TranslationCheckerApp();
-		app.setStatusLabel("Successfully updated key '" + key + "' with new value '" + newValue + "' in file: " + filePath);
-		System.out.println("Successfully updated key '" + key + "' with new value '" + newValue + "' in file: " + filePath);
-	}
-
-	private Language getLanguage(String lang) {
-		return LocaleEncodingService.getLocaleWithEncoding(lang);
 	}
 }
