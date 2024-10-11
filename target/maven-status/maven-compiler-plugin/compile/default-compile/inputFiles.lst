@@ -1,1 +1,14 @@
-C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\TranslationCheckerGUI\TranslationCheckerGUI.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\services\DeepLService.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\services\LocaleEncodingService.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\core\TranslationCheck.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\ui\SettingsDialog.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\ui\ConvertedFilesDialog.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\TranslationCheckerApp.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\contsants\Language.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\contsants\Constants.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\services\FileEncodingConverter.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\model\LanguageProperties.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\manager\SettingsManager.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\manager\TranslationKeyManager.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\ui\FileWarningDialog.java
+C:\Users\NIFA\IdeaProjects\Localization_Editor\src\main\java\com\gui\ui\EditTranslationsDialog.java

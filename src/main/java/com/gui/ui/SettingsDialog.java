@@ -18,11 +18,17 @@ public class SettingsDialog {
 		return languagesField.getText();
 	}
 
+	public JTextField getApiKeyField() {
+		return apiKeyField;
+	}
+
 	public boolean isSearchUnsetOnlyCheckboxSelected() {
 		return searchUnsetOnlyCheckbox.isSelected();
 	}
 
 	private JTextField basePathField;
+
+	private JTextField apiKeyField;
 	private JTextField languagesField;
 	private JCheckBox searchUnsetOnlyCheckbox;
 	private JCheckBox convertFilesCheckbox;
@@ -36,14 +42,14 @@ public class SettingsDialog {
 		settingsDialog.setLayout(new GridLayout(5, 2));
 
 		JLabel basePathLabel = new JLabel("Base Path:");
-		basePathField = new JTextField(settings.getProperty("base.path", "path_to_project"));
+		basePathField = new JTextField(settings.getProperty("base.path", "PATH_TO_PROJECT"));
 		settingsDialog.add(basePathLabel);
 		settingsDialog.add(basePathField);
 
-		JLabel languagesLabel = new JLabel("Languages:");
-		languagesField = new JTextField(settings.getProperty("languages", "de,en,es,fr,hu,it,nl,ru"));
-		settingsDialog.add(languagesLabel);
-		settingsDialog.add(languagesField);
+		JLabel apiKeyLabel = new JLabel("DeepL API Key: ");
+		apiKeyField = new JTextField(settings.getProperty("api.key", "KEY"));
+		settingsDialog.add(apiKeyLabel);
+		settingsDialog.add(apiKeyField);
 
 		searchUnsetOnlyCheckbox = new JCheckBox("Search only unset keys",
 				Boolean.parseBoolean(settings.getProperty("search.unset.only", "true")));
