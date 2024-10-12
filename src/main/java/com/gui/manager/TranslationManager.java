@@ -3,12 +3,12 @@ package com.gui.manager;
 import com.gui.TranslationCheckerApp;
 import com.gui.contsants.LanguagesConstant;
 import com.gui.services.DeepLService;
+import com.gui.ui.FileWarningDialog;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -29,15 +29,14 @@ public class TranslationManager {
 	public void addTranslateButtonListener() {
 		translateButtons.addActionListener(e -> {
 
-			// Get selected row from the table
-			int selectedRowInEditDialog = editDialogTable.getSelectedRow();
-			if (selectedRowInEditDialog == -1) {
+			translateButtons.setEnabled(false);
+
+			// Get selected rows from the table
+			int[] selectedRowsInEditDialog = editDialogTable.getSelectedRows();
+			if (selectedRowsInEditDialog.length == 0) {
 				JOptionPane.showMessageDialog(null, "Please select a row to translate.");
 				return;
 			}
-
-			// Disable the translate button to prevent multiple clicks during the process
-			translateButtons.setEnabled(false);
 
 			// Create a SwingWorker to run the task in the background
 			SwingWorker<Void, Void> worker = new SwingWorker<>() {
@@ -45,39 +44,51 @@ public class TranslationManager {
 				protected Void doInBackground() throws Exception {
 					selectedValues.clear();  // clear the list before adding new values
 
-					if (editDialogTable.getSelectedRowCount() > 1) {
-						int[] selectedRowsInEditDialog = editDialogTable.getSelectedRows();
-						for (int selectedRowInEditDialog : selectedRowsInEditDialog) {
-							String selectedValue = (String) editDialogTable.getValueAt(selectedRowInEditDialog, 2);
-							selectedValues.add(selectedValue);
-						}
-					} else {
-						String selectedValue = (String) editDialogTable.getValueAt(selectedRowInEditDialog, 2);
+					TranslationKeyManager translationKeyManager = new TranslationKeyManager();
+					TranslationCheckerApp app = new TranslationCheckerApp();
+					JTable mainTable = app.getTable();
+					DefaultTableModel mainTableModel = app.getTableModel();
+
+					List<String> newValues = new ArrayList<>();
+					Map<Path, String> failedFiles = new HashMap<>();
+
+					// Loop through each selected row in the dialog table
+					for (int selectedRow : selectedRowsInEditDialog) {
+						String selectedValue = (String) editDialogTable.getValueAt(selectedRow, 2);
+
 						// Remove "(*)" at the end of the value
 						Pattern languageCodePattern = Pattern.compile("\\s*\\((?i:" +
 								Arrays.stream(LanguagesConstant.values())
 										.map(LanguagesConstant::name)
 										.collect(Collectors.joining("|")) +
 								")\\)$");
-
 						selectedValue = languageCodePattern.matcher(selectedValue).replaceAll("");
-						selectedValues.add(selectedValue);
+						selectedValues.add(selectedValue);  // Add the cleaned value to the list
+
+						String language = editDialogTable.getValueAt(selectedRow, 0).toString();
+						String key = editDialogTable.getValueAt(selectedRow, 1).toString();
+						String filePath = editDialogTable.getValueAt(selectedRow, 3).toString();
+
+						// Translate the value using DeepL API
+						String translatedValue;
+						try {
+							translatedValue = DeepLService.translateString(selectedValue, "auto", language);
+							newValues.add(translatedValue);
+						} catch (Exception e) {
+							failedFiles.put(Path.of(filePath), e.getMessage());
+							continue; // Skip further processing for this row
+						}
+
+						// Update the value in the file and both tables
+						translationKeyManager.updateKeyInFile(language, key, translatedValue, filePath);
+						translationKeyManager.updateColumnValue(language, key, translatedValue, editDialogTableModel);
+						translationKeyManager.updateColumnValue(language, key, translatedValue, mainTableModel);
 					}
 
-					String language = editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 0).toString();
-					String key = editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 1).toString();
-					// TODO Multi Selection Support
-					String newValue = DeepLService.translateTextList(selectedValues, "auto", language).get(0);
-					String filePath = editDialogTable.getValueAt(editDialogTable.getSelectedRow(), 3).toString();
-
-					TranslationCheckerApp app = new TranslationCheckerApp();
-					DefaultTableModel mainTableModel = app.getTableModel();
-
-					// Update the Value in the file
-					TranslationKeyManager translationKeyManager = new TranslationKeyManager();
-					translationKeyManager.updateKeyInFile(language, key, newValue, filePath); // Update the value in the file
-					translationKeyManager.updateColumnValue(language, key, newValue, editDialogTableModel); // Update the value in the table
-					translationKeyManager.updateColumnValue(language, key, newValue, mainTableModel); // Update the value in the main table
+					// If there are failed translations, show a dialog
+					if (!failedFiles.isEmpty()) {
+						FileWarningDialog.show(failedFiles, "Translation failed for the following files:");
+					}
 
 					return null;
 				}
@@ -85,20 +96,19 @@ public class TranslationManager {
 				@Override
 				protected void done() {
 					try {
-						get();
-
+						get(); // Wait for the doInBackground method to complete
 					} catch (Exception ex) {
 						JOptionPane.showMessageDialog(null, "Error during translation: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 						System.out.printf("Error during translation: %s%n", ex.getMessage());
 					} finally {
-						DeepLService.closeHttpClient();  // Close the HttpClient
+						// Re-enable the translate button
 						translateButtons.setEnabled(true);
 					}
 				}
 			};
 
-			// Execute the worker to start the background task
 			worker.execute();
 		});
 	}
 }
+

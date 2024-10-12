@@ -3,6 +3,7 @@ package com.gui;
 import com.gui.contsants.LanguagesConstant;
 import com.gui.core.TranslationCheck;
 import com.gui.manager.SettingsManager;
+import com.gui.manager.TranslationManager;
 import com.gui.model.LanguageProperties;
 import com.gui.ui.EditTranslationsDialog;
 import com.gui.ui.SettingsDialog;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TranslationCheckerApp extends JFrame {
@@ -111,6 +113,7 @@ public class TranslationCheckerApp extends JFrame {
 		table.getColumnModel().getColumn(0).setMaxWidth(150);
 	}
 
+
 	private void initButtonsAndPanels() {
 		JButton refreshButton = new JButton("Refresh");
 		refreshButton.addActionListener(e -> {
@@ -124,11 +127,20 @@ public class TranslationCheckerApp extends JFrame {
 			settingsDialog.show(this, settings.getSettings());
 		});
 
-		JButton allTranslationsButton = new JButton("Edit Translations");
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+
+		JButton translateButtons = new JButton("Translate");
+		translateButtons.addActionListener(e -> {
+			TranslationManager translationManager = new TranslationManager(table, tableModel, translateButtons);
+			translationManager.addTranslateButtonListener();
+		});
+
+		JButton allTranslationsButton = new JButton("Edit all Translations");
 		allTranslationsButton.addActionListener(e -> {
-					EditTranslationsDialog editTranslationsDialog = new EditTranslationsDialog(table, tableModel);
-					editTranslationsDialog.show();
-				});
+			EditTranslationsDialog editTranslationsDialog = new EditTranslationsDialog(table, tableModel);
+			editTranslationsDialog.show();
+		});
 
 		JTextField searchField = new JTextField(20);
 		JButton searchButton = new JButton("Search");
@@ -142,8 +154,11 @@ public class TranslationCheckerApp extends JFrame {
 		searchPanel.add(searchField);
 		searchPanel.add(searchButton);
 
+		buttonPanel.add(translateButtons);
+		buttonPanel.add(allTranslationsButton);
+
 		northPanel.add(searchPanel, BorderLayout.WEST);
-		northPanel.add(allTranslationsButton, BorderLayout.EAST);
+		northPanel.add(buttonPanel, BorderLayout.EAST);
 
 		southWestPanel.add(settingsButton, BorderLayout.WEST);
 		southWestPanel.add(refreshButton, BorderLayout.CENTER);
@@ -172,10 +187,11 @@ public class TranslationCheckerApp extends JFrame {
 		}
 	}
 
-	public void updateTable(Map<LanguagesConstant, List<LanguageProperties>> propertiesMap, boolean searchUnsetOnly, String[] LANGUAGES) {
+	public void updateTable(Map<LanguagesConstant, List<LanguageProperties>> propertiesMap, boolean searchUnsetOnly) {
 		tableModel.setRowCount(0);
 
-		Pattern languageCodePattern = Pattern.compile(".*\\((" + String.join("|", LANGUAGES) + ")\\)$");
+		Pattern languageCodePattern = Pattern.compile(".*\\((\\w{2})\\)$");
+
 		int totalEntries = 0;
 
 		for (LanguagesConstant lang : propertiesMap.keySet()) {
@@ -186,10 +202,13 @@ public class TranslationCheckerApp extends JFrame {
 				Path filePath = languageProps.getPath();
 
 				for (String key : properties.stringPropertyNames()) {
-					String value = properties.getProperty(key, "");
+					String value = properties.getProperty(key, "").trim(); // Trim Leerzeichen
+
+					// Matcher nur einmal berechnen
+					Matcher matcher = languageCodePattern.matcher(value);
 
 					if (searchUnsetOnly) {
-						if (languageCodePattern.matcher(value).matches()) {
+						if (matcher.matches()) {
 							tableModel.addRow(new Object[]{lang.getLocale(), key, value, filePath.toString()});
 							totalEntries++;
 						} else if (value.isEmpty()) {
@@ -205,10 +224,10 @@ public class TranslationCheckerApp extends JFrame {
 		}
 
 		statusLabel.setText("Total Entries: " + totalEntries);
-		sortTabel();
+		sortTable();
 	}
 
-	public void sortTabel() {
+	public void sortTable() {
 		TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
 		table.setRowSorter(sorter);
 

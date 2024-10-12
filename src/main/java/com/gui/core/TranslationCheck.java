@@ -124,7 +124,7 @@ public class TranslationCheck {
 				}
 
 				// Update the table with the properties
-				translationCheckerApp.updateTable(propertiesMap, searchUnsetOnly, LANGUAGES);
+				translationCheckerApp.updateTable(propertiesMap, searchUnsetOnly);
 				return null;
 			}
 
@@ -158,7 +158,7 @@ public class TranslationCheck {
 					get();
 
 					if (!unreadableFiles.isEmpty()) {
-						FileWarningDialog.show(unreadableFiles);
+						FileWarningDialog.show(unreadableFiles, "The following files could not be read:");
 					}
 
 				} catch (InterruptedException | ExecutionException e) {

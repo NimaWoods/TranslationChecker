@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class FileWarningDialog {
 
-    public static void show(Map<Path, String> unreadableFiles) {
+    public static void show(Map<Path, String> unreadableFiles, String title) {
         String[] columnNames = {"File", "Error"};
         Object[][] data = new Object[unreadableFiles.size()][2];
 
@@ -22,7 +22,7 @@ public class FileWarningDialog {
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setPreferredSize(new Dimension(800, 200));
 
-        JOptionPane.showMessageDialog(null, scrollPane, "Unreadable Files", JOptionPane.WARNING_MESSAGE);
+        JOptionPane.showMessageDialog(null, scrollPane, title, JOptionPane.WARNING_MESSAGE);
     }
 
 }

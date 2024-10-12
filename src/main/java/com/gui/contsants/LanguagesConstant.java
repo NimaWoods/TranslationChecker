@@ -3,6 +3,7 @@ package com.gui.contsants;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Map;
 
 public enum LanguagesConstant {
 	GERMAN(Locale.GERMAN, StandardCharsets.ISO_8859_1),
@@ -29,5 +30,9 @@ public enum LanguagesConstant {
 
 	public Charset getEncoding() {
 		return encoding;
+	}
+
+	public Map<String, String> getLocaleWithEncoding() {
+		return Map.of(locale.getLanguage(), encoding.name());
 	}
 }

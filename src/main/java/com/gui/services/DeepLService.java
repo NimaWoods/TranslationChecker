@@ -3,13 +3,13 @@ package com.gui.services;
 import com.cybozu.labs.langdetect.Detector;
 import com.cybozu.labs.langdetect.DetectorFactory;
 import com.cybozu.labs.langdetect.LangDetectException;
+import com.gui.contsants.LanguagesConstant;
 import com.gui.manager.SettingsManager;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
@@ -18,11 +18,10 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -55,9 +54,9 @@ public class DeepLService {
 
 	public static void main(String[] args) {
 		try {
-			String result = translateString("Hello World", "EN", "DE");
+			String result = translateString("Hello World (de)", "EN", "DE");
 			System.out.println("Translated text: " + result);
-		} catch (IOException | ParseException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -100,7 +99,7 @@ public class DeepLService {
 			try {
 				String translatedText = translateString(text, sourceLanguage, targetLanguage);
 				translatedTextList.add(translatedText);
-			} catch (IOException | ParseException e) {
+			} catch (Exception e) {
 				logger.log(Level.SEVERE, "Error translating text", e);
 				translatedTextList.add(text); // Add original text if translation fails
 			}
@@ -117,46 +116,44 @@ public class DeepLService {
 	 * @param targetLanguage The target language code.
 	 * @return The translated text.
 	 */
-	private static String translateString(String text, String sourceLanguage, String targetLanguage) throws IOException, ParseException {
+	public static String translateString(String text, String sourceLanguage, String targetLanguage) throws IOException, ParseException {
 
 		if (sourceLanguage.equals("auto")) {
 			sourceLanguage = detectLanguage(text);
+
+			if(Objects.equals(sourceLanguage, targetLanguage)) {
+				throw new IllegalArgumentException("Detected Source language (" + sourceLanguage + ") and target language (" + targetLanguage + ") are the same");
+			}
 		}
 
+		// Get your API key from settings
 		SettingsManager settingsManager = new SettingsManager();
 		String authKey = settingsManager.getSettings().getProperty("api.key");
 
-		final HttpPost httppost = new HttpPost("https://api-free.deepl.com/v2/translate?auth_key=" + authKey);
+		// Prepare HTTP POST request to DeepL API
+		final HttpPost httppost = new HttpPost("https://api-free.deepl.com/v2/translate");
+		httppost.addHeader("Authorization", "DeepL-Auth-Key " + authKey);
+		httppost.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-		// Hinzufügen der Header
-		httppost.addHeader(HttpHeaders.HOST, "api-free.deepl.com");
-		httppost.addHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:66.0) Gecko/20100101 Firefox/66.0");
-		httppost.addHeader(HttpHeaders.ACCEPT, "*/*");
-		httppost.addHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-
-		// Parameter der Anfrage
-		final List<NameValuePair> params = new ArrayList<>();
-		params.add(new BasicNameValuePair("auth_key", authKey));
+		// Prepare request parameters
+		List<NameValuePair> params = new ArrayList<>();
 		params.add(new BasicNameValuePair("text", text));
 		params.add(new BasicNameValuePair("source_lang", sourceLanguage));
 		params.add(new BasicNameValuePair("target_lang", targetLanguage));
 
-		// Setzen der Parameter in den Http-Post-Request
+		// Set entity with the form data
 		httppost.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8));
 
-		// Ausführen der Anfrage und erhalten der Antwort
+		// Execute the request and get the response
 		HttpEntity entity = getHttpClient().execute(httppost).getEntity();
 
 		if (entity != null) {
-			// Konvertieren der Antwort in einen JSON-String
 			String responseString = EntityUtils.toString(entity);
-			JSONObject response = new JSONObject(responseString);
+			JSONObject jsonResponse = new JSONObject(responseString);
 
-			// Rückgabe des übersetzten Textes aus der JSON-Antwort
-			return response.getJSONArray("translations").getJSONObject(0).getString("text");
+			return removeMarker(jsonResponse.getJSONArray("translations").getJSONObject(0).getString("text"));
 		}
 
-		// Falls keine gültige Antwort vorliegt, gib den Originaltext zurück
 		return text;
 	}
 
@@ -168,13 +165,15 @@ public class DeepLService {
 	 */
 	public static String detectLanguage(String text) {
 		// Überprüfen, ob die Sprachprofile bereits geladen wurden
-		try {
-			DetectorFactory.loadProfile("src/main/java/com/gui/profiles");
-			logger.info("Successfully loaded profiles. Loaded " + DetectorFactory.getLangList().size() + " profiles.");
-			profilesLoaded = true;
-		} catch (LangDetectException e) {
-			logger.log(Level.SEVERE, "Error loading language profiles", e);
-			return null;
+		if (!profilesLoaded) {
+			try {
+				DetectorFactory.loadProfile("src/main/java/com/gui/profiles");
+				logger.info("Successfully loaded profiles. Loaded " + DetectorFactory.getLangList().size() + " profiles.");
+				profilesLoaded = true;
+			} catch (LangDetectException e) {
+				logger.log(Level.SEVERE, "Error loading language profiles", e);
+				return null;
+			}
 		}
 
 		try {
@@ -186,4 +185,17 @@ public class DeepLService {
 			return null;
 		}
 	}
+
+	private static String removeMarker(String text) {
+
+		String languageCodes = Arrays.stream(LanguagesConstant.values())
+				.map(lang -> lang.getLocale().getLanguage())
+				.collect(Collectors.joining("|"));
+
+		// Regular expression zum Entfernen des Sprachmarkers am Ende des Textes
+		return text.replaceAll("\\s*\\(\\b(" + languageCodes + ")\\b\\)$", "").trim();
+	}
+
+
+
 }

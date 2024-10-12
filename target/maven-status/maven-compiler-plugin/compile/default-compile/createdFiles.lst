@@ -1,10 +1,7 @@
-com\gui\contsants\Language.class
 com\gui\model\LanguageProperties.class
-com\gui\services\DeepLService.class
 com\gui\services\LocaleEncodingService.class
 com\gui\ui\SettingsDialog.class
 com\gui\ui\EditTranslationsDialog.class
-com\gui\contsants\Constants.class
 com\gui\core\TranslationCheck$1.class
 com\gui\services\FileEncodingConverter.class
 com\gui\ui\EditTranslationsDialog$2.class

@@ -92,7 +92,6 @@ public class EditTranslationsDialog {
 		registerTableModelListenerForEditValue(editDialogTableModel);
 
 		JPanel southPanel = new JPanel(new BorderLayout());
-
 		JButton translateButtons = new JButton("Translate");
 		translateButtons.addActionListener(e -> {
 
