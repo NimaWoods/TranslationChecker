@@ -1,5 +1,6 @@
 package com.gui.manager;
 
+import com.gui.contsants.SettingsConstant;
 import com.gui.ui.SettingsDialog;
 
 import javax.swing.*;
@@ -13,12 +14,12 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ConfigurationManager {
+public class SettingsManager {
 
-	private static final Logger logger = Logger.getLogger(ConfigurationManager.class.getName());
+	private static final Logger logger = Logger.getLogger(SettingsManager.class.getName());
 	private Properties settings;
 
-	public ConfigurationManager() {
+	public SettingsManager() {
 		settings = new Properties();
 		loadSettings();
 	}
@@ -38,7 +39,10 @@ public class ConfigurationManager {
 	}
 
 	private void createDefaultSettings(Path settingsPath) {
-		settings.setProperty("base.path", "path_to_project");
+		// Verwende die Enum-Standardwerte, um Standardeinstellungen zu erstellen
+		for (SettingsConstant constant : SettingsConstant.values()) {
+			settings.setProperty(constant.getKey(), constant.getDefaultValue());
+		}
 
 		try (OutputStream output = Files.newOutputStream(settingsPath)) {
 			settings.store(output, "Default settings");
@@ -52,8 +56,9 @@ public class ConfigurationManager {
 	public void saveSettings(Properties settings, JDialog dialog, SettingsDialog settingsDialog) {
 		String basePathField = settingsDialog.getBasePathField();
 		String searchUnsetOnlyCheckbox = Boolean.toString(settingsDialog.isSearchUnsetOnlyCheckboxSelected());
-		String apiKeyField = String.valueOf(settingsDialog.getApiKeyField());
+		String apiKeyField = settingsDialog.getApiKeyField();
 		String convertFilesCheckbox = Boolean.toString(settingsDialog.isConvertFilesCheckboxSelected());
+		String languageDetectionCheckbox = Boolean.toString(settingsDialog.isLanguageDetectionCheckboxSelected());
 
 		Path BASE_PATH = Path.of(basePathField);
 
@@ -64,10 +69,12 @@ public class ConfigurationManager {
 			return;
 		}
 
-		settings.setProperty("base.path", basePathField);
-		settings.setProperty("search.unset.only", searchUnsetOnlyCheckbox);
-		settings.setProperty("api.key", apiKeyField);
-		settings.setProperty("convert.files", convertFilesCheckbox);
+		// Verwende die Enum-Schlüssel, um die neuen Werte zu speichern
+		settings.setProperty(SettingsConstant.BASE_PATH.getKey(), basePathField);
+		settings.setProperty(SettingsConstant.SEARCH_UNSET_ONLY.getKey(), searchUnsetOnlyCheckbox);
+		settings.setProperty(SettingsConstant.DEEPL_API_KEY.getKey(), apiKeyField);
+		settings.setProperty(SettingsConstant.CONVERT_FILES.getKey(), convertFilesCheckbox);
+		settings.setProperty(SettingsConstant.LANGUAGE_DETECTION.getKey(), languageDetectionCheckbox);
 
 		try (OutputStream output = Files.newOutputStream(Paths.get("settings.properties"))) {
 			settings.store(output, null);

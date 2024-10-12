@@ -18,7 +18,6 @@ public class FileWarningDialog {
             i++;
         }
 
-        // Verwende die Factory, um die Tabelle und das ScrollPane zu erstellen
         JTable table = UIComponentFactory.createTable(new DefaultTableModel(data, columnNames));
         JScrollPane scrollPane = UIComponentFactory.createScrollPane(table);
         scrollPane.setPreferredSize(new Dimension(800, 200));

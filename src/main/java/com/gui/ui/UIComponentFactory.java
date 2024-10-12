@@ -21,7 +21,8 @@ public class UIComponentFactory {
 	public static JTextField createTextField(String initialText) {
 		JTextField textField = new JTextField(initialText);
 		textField.setBorder(BorderFactory.createLineBorder(DesignColorsConstant.DARK_GRAY.getColor()));  // Rahmenfarbe
-		textField.setBackground(DesignColorsConstant.LIGHT_GRAY.getColor());  // Hellgrauer Hintergrund
+		textField.setBackground(DesignColorsConstant.LIGHT_GRAY.getColor());
+		textField.setPreferredSize(new Dimension(200, 30));
 		return textField;
 	}
 

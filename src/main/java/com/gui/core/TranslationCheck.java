@@ -2,7 +2,7 @@ package com.gui.core;
 
 import com.gui.TranslationCheckerApp;
 import com.gui.contsants.LanguagesConstant;
-import com.gui.manager.ConfigurationManager;
+import com.gui.manager.SettingsManager;
 import com.gui.model.LanguageProperties;
 import com.gui.services.FileEncodingConverter;
 import com.gui.services.LocaleEncodingService;
@@ -34,7 +34,7 @@ public class TranslationCheck {
 	Properties settings;
 	private final TranslationCheckerApp translationCheckerApp;
 
-	ConfigurationManager settingsDAO = new ConfigurationManager();
+	SettingsManager settingsDAO = new SettingsManager();
 
 	public TranslationCheck(JProgressBar progressBar, TranslationCheckerApp app) {
 		this.settings = settingsDAO.getSettings();

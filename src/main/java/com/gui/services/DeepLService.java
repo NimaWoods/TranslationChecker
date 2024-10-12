@@ -4,7 +4,7 @@ import com.cybozu.labs.langdetect.Detector;
 import com.cybozu.labs.langdetect.DetectorFactory;
 import com.cybozu.labs.langdetect.LangDetectException;
 import com.gui.contsants.LanguagesConstant;
-import com.gui.manager.ConfigurationManager;
+import com.gui.manager.SettingsManager;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
@@ -96,8 +96,8 @@ public class DeepLService {
 		}
 
 		// Get your API key from settings
-		ConfigurationManager configurationManager = new ConfigurationManager();
-		String authKey = configurationManager.getSettings().getProperty("api.key");
+		SettingsManager settingsManager = new SettingsManager();
+		String authKey = settingsManager.getSettings().getProperty("api.key");
 
 		// Prepare HTTP POST request to DeepL API
 		final HttpPost httppost = new HttpPost("https://api-free.deepl.com/v2/translate");
@@ -170,8 +170,8 @@ public class DeepLService {
 		// Get character count of all values
 		int charCount = valueList.stream().mapToInt(String::length).sum();
 
-		ConfigurationManager configurationManager = new ConfigurationManager();
-		String authKey = configurationManager.getSettings().getProperty("api.key");
+		SettingsManager settingsManager = new SettingsManager();
+		String authKey = settingsManager.getSettings().getProperty("api.key");
 
 		// Prepare HTTP GET request
 		HttpGet httpGet = new HttpGet("https://api-free.deepl.com/v2/usage");

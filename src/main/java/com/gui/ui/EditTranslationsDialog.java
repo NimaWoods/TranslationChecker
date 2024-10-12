@@ -92,6 +92,10 @@ public class EditTranslationsDialog {
 
 	private void registerTableModelListenerForEditValue(DefaultTableModel model) {
 		model.addTableModelListener(e -> {
+			if (editDialogTable.isEditing()) {
+				editDialogTable.getCellEditor().stopCellEditing();
+			}
+
 			if (e.getType() == TableModelEvent.UPDATE) {
 				JTable currentTable = model == tableModel ? table : findTableByModel(model);
 
@@ -104,9 +108,9 @@ public class EditTranslationsDialog {
 					String newValue = (String) currentTable.getValueAt(modelRow, 2);
 
 					// Sprache, Key und Datei aus der Tabelle holen
-					String language = (String) model.getValueAt(modelRow, 0);
-					String key = (String) model.getValueAt(modelRow, 1);
-					String filePath = (String) model.getValueAt(modelRow, 3);
+					String language = model.getValueAt(modelRow, 0).toString();
+					String key = model.getValueAt(modelRow, 1).toString();
+					String filePath = model.getValueAt(modelRow, 3).toString();
 
 					// Aktualisiere den Key in der Datei
 					TranslationKeyManager translationKeyManager = new TranslationKeyManager();
@@ -119,6 +123,8 @@ public class EditTranslationsDialog {
 					// Synchronisiere den Wert im Edit Dialog auch in der Haupttabelle
 					if (model != tableModel) {
 						translationKeyManager.updateColumnValue(language, key, newValue, tableModel);
+						editDialogTableModel.fireTableDataChanged();
+
 					}
 				}
 			}

@@ -1,15 +1,14 @@
 package com.gui.manager;
 
+import com.gui.TranslationCheckerApp;
+import com.gui.services.LocaleEncodingService;
+
+import javax.swing.table.DefaultTableModel;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
-import javax.swing.table.DefaultTableModel;
-
-import com.gui.TranslationCheckerApp;
-import com.gui.services.LocaleEncodingService;
 
 public class TranslationKeyManager {
 
@@ -18,6 +17,7 @@ public class TranslationKeyManager {
 	 **/
 	public void updateColumnValue(String language, String key, String newValue, DefaultTableModel tableModel) {
 		for (int row = 0; row < tableModel.getRowCount(); row++) {
+
 			String tableLanguage = tableModel.getValueAt(row, 0).toString();
 			String tableKey = tableModel.getValueAt(row, 1).toString();
 
