@@ -2,7 +2,7 @@ package com.gui;
 
 import com.gui.contsants.LanguagesConstant;
 import com.gui.core.TranslationCheck;
-import com.gui.manager.SettingsManager;
+import com.gui.manager.ConfigurationManager;
 import com.gui.manager.TranslationManager;
 import com.gui.model.LanguageProperties;
 import com.gui.ui.EditTranslationsDialog;
@@ -47,12 +47,12 @@ public class TranslationCheckerApp extends JFrame {
 	private DefaultTableModel tableModel;
 	private JProgressBar progressBar;
 	private JLabel statusLabel;
-	private SettingsManager settings;
+	private ConfigurationManager settings;
 
 	SettingsDialog settingsDialog;
 
 	public TranslationCheckerApp() {
-		settings = new SettingsManager();
+		settings = new ConfigurationManager();
 		settings.loadSettings();
 
 		initLookAndFeel();

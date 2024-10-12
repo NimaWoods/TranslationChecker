@@ -1,6 +1,6 @@
 package com.gui.ui;
 
-import com.gui.manager.SettingsManager;
+import com.gui.manager.ConfigurationManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -8,7 +8,7 @@ import java.util.Properties;
 
 public class SettingsDialog {
 
-	SettingsManager settingsManager = new SettingsManager();
+	ConfigurationManager configurationManager = new ConfigurationManager();
 
 	public String getBasePathField() {
 		return basePathField.getText();
@@ -59,7 +59,7 @@ public class SettingsDialog {
 
 		JButton saveButton = new JButton("Save");
 		saveButton.addActionListener(e -> {
-			settingsManager.saveSettings(settings, settingsDialog, this);
+			configurationManager.saveSettings(settings, settingsDialog, this);
 			settingsDialog.dispose();
 		});
 		buttonPanel.add(saveButton);

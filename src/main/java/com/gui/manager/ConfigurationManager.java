@@ -13,12 +13,12 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class SettingsManager {
+public class ConfigurationManager {
 
-	private static final Logger logger = Logger.getLogger(SettingsManager.class.getName());
+	private static final Logger logger = Logger.getLogger(ConfigurationManager.class.getName());
 	private Properties settings;
 
-	public SettingsManager() {
+	public ConfigurationManager() {
 		settings = new Properties();
 		loadSettings();
 	}
