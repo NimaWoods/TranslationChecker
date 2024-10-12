@@ -1,6 +1,7 @@
 package com.gui.ui;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.util.List;
 
 public class ConvertedFilesDialog {
@@ -17,8 +18,9 @@ public class ConvertedFilesDialog {
 				data[i][2] = convertedFiles.get(i)[2];
 			}
 
-			JTable table = new JTable(data, columnNames);
-			JScrollPane scrollPane = new JScrollPane(table);
+			// Verwende die Factory, um die Tabelle und das ScrollPane zu erstellen
+			JTable table = UIComponentFactory.createTable(new DefaultTableModel(data, columnNames));
+			JScrollPane scrollPane = UIComponentFactory.createScrollPane(table);
 			scrollPane.setPreferredSize(new java.awt.Dimension(800, 200));
 
 			JOptionPane.showMessageDialog(null, scrollPane, "Converted Files", JOptionPane.INFORMATION_MESSAGE);
@@ -26,5 +28,4 @@ public class ConvertedFilesDialog {
 			JOptionPane.showMessageDialog(null, "No files were converted.", "Converted Files", JOptionPane.INFORMATION_MESSAGE);
 		}
 	}
-
 }

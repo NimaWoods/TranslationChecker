@@ -8,7 +8,6 @@ import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,7 +38,6 @@ public class EditTranslationsDialog {
 		String filePath = (String) tableModel.getValueAt(modelRow, 3); // Pfad aus der Tabelle
 
 		Path selectedFilePath = Paths.get(filePath);
-		System.out.println("Converted Path Object: " + selectedFilePath);
 
 		LocaleEncodingService localeEncodingService = new LocaleEncodingService();
 		Map<String, String[]> translationsWithPaths = localeEncodingService.loadTranslationsForKey(selectedKey, selectedFilePath);
@@ -56,8 +54,9 @@ public class EditTranslationsDialog {
 		JDialog dialog = new JDialog((Frame) null, "Translations for Key: " + key, true);
 		dialog.setLayout(new BorderLayout());
 
-		String[] columnNames = {"LanguagesConstant", "Key", "Value", "File Path"};
+		String[] columnNames = {"Language", "Key", "Value", "File Path"};
 
+		// Verwende die Factory, um die Tabelle zu erstellen
 		editDialogTableModel = new DefaultTableModel(columnNames, 0) {
 			@Override
 			public boolean isCellEditable(int row, int column) {
@@ -65,37 +64,24 @@ public class EditTranslationsDialog {
 			}
 		};
 
-		editDialogTable = new JTable(editDialogTableModel);
-		editDialogTable.getColumnModel().getColumn(0).setPreferredWidth(50);
-		editDialogTable.getColumnModel().getColumn(1).setPreferredWidth(200);
-		editDialogTable.getColumnModel().getColumn(2).setPreferredWidth(400);
-		editDialogTable.getColumnModel().getColumn(3).setPreferredWidth(150);
+		editDialogTable = UIComponentFactory.createTable(editDialogTableModel);
 
-		editDialogTable.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke("ENTER"), "saveEditing");
-		editDialogTable.getActionMap().put("saveEditing", new AbstractAction() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (editDialogTable.isEditing()) {
-					editDialogTable.getCellEditor().stopCellEditing();  // Editor stoppen und Wert speichern
-				}
-			}
-		});
-
+		// Daten in die Tabelle einfügen
 		translationsWithPaths.forEach((language, details) -> editDialogTableModel.addRow(new Object[]{language, key, details[0], details[1]}));
 
-		JScrollPane scrollPane = new JScrollPane(editDialogTable);
-		JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
+		// Verwende die Factory, um das ScrollPane zu erstellen
+		JScrollPane scrollPane = UIComponentFactory.createScrollPane(editDialogTable);
 		dialog.add(scrollPane, BorderLayout.CENTER);
-		dialog.add(scrollBar, BorderLayout.EAST);
 
 		registerTableModelListenerForEditValue(editDialogTableModel);
 
+		// Verwende die Factory, um den Button zu erstellen
 		JPanel southPanel = new JPanel(new BorderLayout());
-		JButton translateButtons = new JButton("Translate");
-		TranslationManager translationManager = new TranslationManager(table, tableModel, translateButtons);
+		JButton translateButton = UIComponentFactory.createButton("Translate");
+		TranslationManager translationManager = new TranslationManager(table, tableModel, translateButton);
 		translationManager.addTranslateButtonListener();
 
-		southPanel.add(translateButtons, BorderLayout.LINE_START);
+		southPanel.add(translateButton, BorderLayout.LINE_START);
 
 		dialog.add(southPanel, BorderLayout.SOUTH);
 
@@ -115,13 +101,7 @@ public class EditTranslationsDialog {
 				for (int row = startRow; row <= endRow; row++) {
 					int modelRow = currentTable.convertRowIndexToModel(row);
 
-					String newValue;
-
-					if (currentTable.isEditing()) {
-						newValue = (String) currentTable.getCellEditor().getCellEditorValue();
-					} else {
-						newValue = (String) currentTable.getValueAt(modelRow, 2);
-					}
+					String newValue = (String) currentTable.getValueAt(modelRow, 2);
 
 					// Sprache, Key und Datei aus der Tabelle holen
 					String language = (String) model.getValueAt(modelRow, 0);
@@ -136,7 +116,7 @@ public class EditTranslationsDialog {
 						throw new RuntimeException(ex);
 					}
 
-					// Synchronisiere den Wert im Edit Dialog auch in der Haupttablle
+					// Synchronisiere den Wert im Edit Dialog auch in der Haupttabelle
 					if (model != tableModel) {
 						translationKeyManager.updateColumnValue(language, key, newValue, tableModel);
 					}

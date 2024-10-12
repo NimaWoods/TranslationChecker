@@ -7,10 +7,10 @@ import com.gui.manager.TranslationManager;
 import com.gui.model.LanguageProperties;
 import com.gui.ui.EditTranslationsDialog;
 import com.gui.ui.SettingsDialog;
+import com.gui.ui.UIComponentFactory;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.nio.file.Path;
@@ -24,37 +24,21 @@ import java.util.regex.Pattern;
 
 public class TranslationCheckerApp extends JFrame {
 
-	private static final Logger logger = Logger.getLogger(TranslationCheckerApp.class.getName());
-
-	private JTable table;
-
-	public JTable getTable() {
-		return table;
-	}
-
-	public void setTable(JTable table) {
-		this.table = table;
-	}
-
 	public DefaultTableModel getTableModel() {
 		return tableModel;
 	}
 
-	public void setTableModel(DefaultTableModel tableModel) {
-		this.tableModel = tableModel;
-	}
-
+	private static final Logger logger = Logger.getLogger(TranslationCheckerApp.class.getName());
+	private JTable table;
 	private DefaultTableModel tableModel;
 	private JProgressBar progressBar;
 	private JLabel statusLabel;
 	private ConfigurationManager settings;
-
 	SettingsDialog settingsDialog;
 
 	public TranslationCheckerApp() {
 		settings = new ConfigurationManager();
 		settings.loadSettings();
-
 		initLookAndFeel();
 		initComponents();
 	}
@@ -68,7 +52,7 @@ public class TranslationCheckerApp extends JFrame {
 
 	private void initLookAndFeel() {
 		try {
-			UIManager.setLookAndFeel(new com.formdev.flatlaf.FlatLightLaf());
+			UIManager.setLookAndFeel(new com.formdev.flatlaf.FlatLightLaf());  // Modernes FlatLaf Look and Feel
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -78,88 +62,79 @@ public class TranslationCheckerApp extends JFrame {
 		setTitle("Translation Checker");
 		setSize(800, 600);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setExtendedState(JFrame.MAXIMIZED_BOTH);
+		setExtendedState(JFrame.MAXIMIZED_BOTH);  // Fenster maximiert starten
 		setLocationRelativeTo(null);
 
-		String[] columnNames = {"LanguagesConstant", "Key", "Value", "File Path"};
+		// Tabelle initialisieren
+		String[] columnNames = {"Language", "Key", "Value", "File Path"};
 		tableModel = new DefaultTableModel(columnNames, 0) {
 			@Override
 			public boolean isCellEditable(int row, int column) {
-				return column == 2;
+				return column == 2;  // Nur die Value-Spalte ist editierbar
 			}
 		};
 
-		table = new JTable(tableModel);
-		configureTable();
+		// Verwende die Factory, um die Tabelle zu erstellen
+		table = UIComponentFactory.createTable(tableModel);
+		table.setTableHeader(UIComponentFactory.createTableHeader(table));  // Verwende die Factory für den Header
 
-		JScrollPane scrollPane = new JScrollPane(table);
+		// ScrollPane für die Tabelle erstellen
+		JScrollPane scrollPane = UIComponentFactory.createScrollPane(table);
 		add(scrollPane, BorderLayout.CENTER);
 
 		progressBar = new JProgressBar();
 		progressBar.setStringPainted(true);
 		progressBar.setVisible(false);
 
-		statusLabel = new JLabel("Translation Checker");
+		statusLabel = UIComponentFactory.createLabel("Translation Checker");
+		statusLabel.setHorizontalAlignment(SwingConstants.RIGHT);  // Rechtsbündig ausgerichtet
 
 		initButtonsAndPanels();
 	}
 
-	private void configureTable() {
-		JTableHeader header = table.getTableHeader();
-		header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.GRAY));
-		table.setShowGrid(true);
-		table.setGridColor(Color.GRAY);
-		table.getColumnModel().getColumn(0).setMinWidth(50);
-		table.getColumnModel().getColumn(0).setMaxWidth(150);
-	}
-
-
 	private void initButtonsAndPanels() {
-		JButton refreshButton = new JButton("Refresh");
+		JButton refreshButton = UIComponentFactory.createButton("Refresh");
 		refreshButton.addActionListener(e -> {
 			TranslationCheck translationCheck = new TranslationCheck(progressBar, this);
 			translationCheck.startTranslationCheck();
 		});
 
-		JButton settingsButton = new JButton("Settings");
+		JButton settingsButton = UIComponentFactory.createButton("Settings");
 		settingsDialog = new SettingsDialog();
-		settingsButton.addActionListener(e -> {
-			settingsDialog.show(this, settings.getSettings());
-		});
+		settingsButton.addActionListener(e -> settingsDialog.show(this, settings.getSettings()));
 
-		JPanel buttonPanel = new JPanel();
-		buttonPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-
-		JButton translateButtons = new JButton("Translate");
-		TranslationManager translationManager = new TranslationManager(table, tableModel, translateButtons);
+		JButton translateButton = UIComponentFactory.createButton("Translate");
+		TranslationManager translationManager = new TranslationManager(table, tableModel, translateButton);
 		translationManager.addTranslateButtonListener();
 
-		JButton allTranslationsButton = new JButton("Edit all Translations");
+		JButton allTranslationsButton = UIComponentFactory.createButton("Edit all Translations");
 		allTranslationsButton.addActionListener(e -> {
 			EditTranslationsDialog editTranslationsDialog = new EditTranslationsDialog(table, tableModel);
 			editTranslationsDialog.show();
 		});
 
-		JTextField searchField = new JTextField(20);
-		JButton searchButton = new JButton("Search");
+		// Suchleiste
+		JTextField searchField = UIComponentFactory.createTextField("");
+		JButton searchButton = UIComponentFactory.createButton("Search");
 		searchButton.addActionListener(e -> searchTable(searchField.getText()));
 
-		JPanel southPanel = new JPanel(new BorderLayout());
-		JPanel southWestPanel = new JPanel(new BorderLayout());
-		JPanel northPanel = new JPanel(new BorderLayout());
+		// Panels erstellen
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		buttonPanel.add(translateButton);
+		buttonPanel.add(allTranslationsButton);
 
 		JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		searchPanel.add(searchField);
 		searchPanel.add(searchButton);
 
-		buttonPanel.add(translateButtons);
-		buttonPanel.add(allTranslationsButton);
-
+		JPanel northPanel = new JPanel(new BorderLayout());
 		northPanel.add(searchPanel, BorderLayout.WEST);
 		northPanel.add(buttonPanel, BorderLayout.EAST);
 
-		southWestPanel.add(settingsButton, BorderLayout.WEST);
-		southWestPanel.add(refreshButton, BorderLayout.CENTER);
+		JPanel southPanel = new JPanel(new BorderLayout());
+		JPanel southWestPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));  // FlowLayout für die Buttons links
+		southWestPanel.add(settingsButton);
+		southWestPanel.add(refreshButton);
 
 		southPanel.add(southWestPanel, BorderLayout.WEST);
 		southPanel.add(progressBar, BorderLayout.NORTH);
@@ -200,9 +175,8 @@ public class TranslationCheckerApp extends JFrame {
 				Path filePath = languageProps.getPath();
 
 				for (String key : properties.stringPropertyNames()) {
-					String value = properties.getProperty(key, "").trim(); // Trim Leerzeichen
+					String value = properties.getProperty(key, "").trim();  // Trim Leerzeichen
 
-					// Matcher nur einmal berechnen
 					Matcher matcher = languageCodePattern.matcher(value);
 
 					if (searchUnsetOnly) {
