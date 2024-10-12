@@ -131,10 +131,8 @@ public class TranslationCheckerApp extends JFrame {
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 
 		JButton translateButtons = new JButton("Translate");
-		translateButtons.addActionListener(e -> {
-			TranslationManager translationManager = new TranslationManager(table, tableModel, translateButtons);
-			translationManager.addTranslateButtonListener();
-		});
+		TranslationManager translationManager = new TranslationManager(table, tableModel, translateButtons);
+		translationManager.addTranslateButtonListener();
 
 		JButton allTranslationsButton = new JButton("Edit all Translations");
 		allTranslationsButton.addActionListener(e -> {

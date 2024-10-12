@@ -5,6 +5,7 @@ import com.cybozu.labs.langdetect.DetectorFactory;
 import com.cybozu.labs.langdetect.LangDetectException;
 import com.gui.contsants.LanguagesConstant;
 import com.gui.manager.SettingsManager;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -18,18 +19,35 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
 
 public class DeepLService {
 
 	private static final Logger logger = Logger.getLogger(DeepLService.class.getName());
 	private static CloseableHttpClient HTTPCLIENT;
 	private static boolean profilesLoaded;
+
+	private static int characterLimit;
+	private static int characterCount;
+	private static int remainingCharacters;
+
+	public static int getCharacterLimit() {
+		return characterLimit;
+	}
+
+	public static int getCharacterCount() {
+		return characterCount;
+	}
+
+	public static int getRemainingCharacters() {
+		return remainingCharacters;
+	}
 
 	private static CloseableHttpClient getHttpClient() {
 		if (HTTPCLIENT == null) {
@@ -47,65 +65,16 @@ public class DeepLService {
 			}
 		}
 	}
-
 	public DeepLService() {
 		getHttpClient();
 	}
 
 	public static void main(String[] args) {
 		try {
-			String result = translateString("Hello World (de)", "EN", "DE");
-			System.out.println("Translated text: " + result);
-		} catch (Exception e) {
-			e.printStackTrace();
+			isEnoughTokensLeft(Arrays.asList("Hello", "World"));
+		} catch (IOException | ParseException e) {
+			throw new RuntimeException(e);
 		}
-	}
-
-	/**
-	 * Translates the given Properties object using DeepL API.
-	 *
-	 * @param properties     The Properties object containing key-value pairs to be translated.
-	 * @param sourceLanguage The source language code (e.g., "EN", "DE").
-	 * @param targetLanguage The target language code (e.g., "EN", "DE").
-	 * @return A new Properties object containing the translated key-value pairs.
-	 */
-	public static Properties translateProperties(Properties properties, String sourceLanguage, String targetLanguage) {
-		Properties translatedProperties = new Properties();
-
-		List<String> keys = properties.stringPropertyNames().stream().collect(toList());
-		List<String> values = keys.stream().map(properties::getProperty).collect(toList());
-
-		List<String> translatedValues = translateTextList(values, sourceLanguage, targetLanguage);
-
-		for (int i = 0; i < keys.size(); i++) {
-			translatedProperties.setProperty(keys.get(i), translatedValues.get(i));
-		}
-
-		return translatedProperties;
-	}
-
-	/**
-	 * Translates a list of strings using the DeepL API.
-	 *
-	 * @param textList       The list of strings to be translated.
-	 * @param sourceLanguage The source language code.
-	 * @param targetLanguage The target language code.
-	 * @return A list of translated strings.
-	 */
-	public static List<String> translateTextList(List<String> textList, String sourceLanguage, String targetLanguage) {
-		List<String> translatedTextList = new ArrayList<>();
-
-		for (String text : textList) {
-			try {
-				String translatedText = translateString(text, sourceLanguage, targetLanguage);
-				translatedTextList.add(translatedText);
-			} catch (Exception e) {
-				logger.log(Level.SEVERE, "Error translating text", e);
-				translatedTextList.add(text); // Add original text if translation fails
-			}
-		}
-
-		return translatedTextList;
 	}
 
 	/**
@@ -196,6 +165,39 @@ public class DeepLService {
 		return text.replaceAll("\\s*\\(\\b(" + languageCodes + ")\\b\\)$", "").trim();
 	}
 
+	public static boolean isEnoughTokensLeft(List<String> valueList) throws IOException, ParseException {
 
+		// Get character count of all values
+		int charCount = valueList.stream().mapToInt(String::length).sum();
 
+		SettingsManager settingsManager = new SettingsManager();
+		String authKey = settingsManager.getSettings().getProperty("api.key");
+
+		// Prepare HTTP GET request
+		HttpGet httpGet = new HttpGet("https://api-free.deepl.com/v2/usage");
+		httpGet.addHeader("Authorization", "DeepL-Auth-Key " + authKey);
+		httpGet.addHeader("Accept", "application/json");
+
+		// Execute the request and get the response
+		HttpEntity entity = getHttpClient().execute(httpGet).getEntity();
+
+		if (entity != null) {
+			String responseString = EntityUtils.toString(entity);
+			JSONObject jsonResponse = new JSONObject(responseString);
+
+			characterLimit = jsonResponse.getInt("character_limit");
+			characterCount = jsonResponse.getInt("character_count");
+
+			remainingCharacters = characterLimit - characterCount;
+			boolean enoughTokensLeft = charCount <= remainingCharacters;
+
+			if (enoughTokensLeft) {
+				System.out.println("Enough tokens left. Character count: " + charCount + ", Remaining characters: " + remainingCharacters);
+				return true;
+			}
+
+		}
+		logger.warning("Not enough tokens left. Character count: " + charCount + ", Remaining characters: " + remainingCharacters);
+		return false;
+	}
 }

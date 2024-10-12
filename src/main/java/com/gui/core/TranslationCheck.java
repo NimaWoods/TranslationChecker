@@ -58,7 +58,7 @@ public class TranslationCheck {
 
 	private SwingWorker<Void, Integer> createSwingWorker() {
 		return new SwingWorker<>() {
-			final Map<Path, String> unreadableFiles = new HashMap<>();
+			final Map<String, String> unreadableFiles = new HashMap<>();
 
 			@Override
 			protected Void doInBackground() throws Exception {
@@ -128,7 +128,7 @@ public class TranslationCheck {
 				return null;
 			}
 
-			private void handleFileError(Path path, Exception e, Map<Path, String> unreadableFiles, Charset inputEncoding, String language) {
+			private void handleFileError(Path path, Exception e, Map<String, String> unreadableFiles, Charset inputEncoding, String language) {
 				String message = e.getMessage();
 
 				if (message == null || message.isEmpty()) {
@@ -139,14 +139,14 @@ public class TranslationCheck {
 					boolean encodingExists = Arrays.stream(LanguagesConstant.values())
 							.anyMatch(lang -> lang.getEncoding().equals(inputEncoding));
 					if (!encodingExists) {
-						unreadableFiles.put(path, "Encoding not supported: " + inputEncoding + " (" + message + ")");
+						unreadableFiles.put(path.toString(), "Encoding not supported: " + inputEncoding + " (" + message + ")");
 					} else if (!inputEncoding.equals(LocaleEncodingService.getLocaleWithEncoding(language).getEncoding())) {
-						unreadableFiles.put(path, "Wrong encoding detected: " + inputEncoding);
+						unreadableFiles.put(path.toString(), "Wrong encoding detected: " + inputEncoding);
 					} else {
-						unreadableFiles.put(path, "Malformed input detected: " + message + " (Encoding: " + inputEncoding + ")");
+						unreadableFiles.put(path.toString(), "Malformed input detected: " + message + " (Encoding: " + inputEncoding + ")");
 					}
 				} else {
-					unreadableFiles.put(path, message);
+					unreadableFiles.put(path.toString(), message);
 				}
 			}
 

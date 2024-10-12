@@ -56,7 +56,7 @@ public class EditTranslationsDialog {
 		JDialog dialog = new JDialog((Frame) null, "Translations for Key: " + key, true);
 		dialog.setLayout(new BorderLayout());
 
-		String[] columnNames = { "LanguagesConstant", "Key", "Value", "File Path" };
+		String[] columnNames = {"LanguagesConstant", "Key", "Value", "File Path"};
 
 		editDialogTableModel = new DefaultTableModel(columnNames, 0) {
 			@Override
@@ -81,8 +81,7 @@ public class EditTranslationsDialog {
 			}
 		});
 
-		translationsWithPaths.forEach(
-				(language, details) -> editDialogTableModel.addRow(new Object[] { language, key, details[0], details[1] }));
+		translationsWithPaths.forEach((language, details) -> editDialogTableModel.addRow(new Object[]{language, key, details[0], details[1]}));
 
 		JScrollPane scrollPane = new JScrollPane(editDialogTable);
 		JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
@@ -93,14 +92,10 @@ public class EditTranslationsDialog {
 
 		JPanel southPanel = new JPanel(new BorderLayout());
 		JButton translateButtons = new JButton("Translate");
-		translateButtons.addActionListener(e -> {
+		TranslationManager translationManager = new TranslationManager(table, tableModel, translateButtons);
+		translationManager.addTranslateButtonListener();
 
-			TranslationManager translationManager = new TranslationManager(editDialogTable, editDialogTableModel, translateButtons);
-			translationManager.addTranslateButtonListener();
-
-		});
 		southPanel.add(translateButtons, BorderLayout.LINE_START);
-
 
 		dialog.add(southPanel, BorderLayout.SOUTH);
 

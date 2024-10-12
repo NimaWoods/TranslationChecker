@@ -1,17 +1,6 @@
 package com.gui.services;
 
-import static com.gui.services.LocaleEncodingService.getLocaleWithEncoding;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,13 +10,15 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.gui.services.LocaleEncodingService.getLocaleWithEncoding;
+
 public class FileEncodingConverter {
 
     static Logger logger = Logger.getLogger(FileEncodingConverter.class.getName());
 
-    final Map<Path, String> unreadableFiles = new HashMap<>();
+    final Map<String, String> unreadableFiles = new HashMap<>();
 
-    public Map<Path, String> getUnreadableFiles() {
+    public Map<String, String> getUnreadableFiles() {
         return unreadableFiles;
     }
 
@@ -76,7 +67,7 @@ public class FileEncodingConverter {
 			        FileEncodingConverter.convertFileEncoding(inputFile, inputEncoding, outputEncoding);
 		        } catch (Exception e) {
 			        logger.log(Level.WARNING, "Error converting file: " + inputFilePath, e);
-			        unreadableFiles.put(path, "Error converting file: " + e.getMessage());
+			        unreadableFiles.put(path.toString(), "Error converting file: " + e.getMessage());
 			        return null;
 		        }
 		        convertedFiles.add(new String[]{inputFilePath, inputEncoding.name(), outputEncoding.name()});

@@ -2,18 +2,17 @@ package com.gui.ui;
 
 import javax.swing.*;
 import java.awt.*;
-import java.nio.file.Path;
 import java.util.Map;
 
 public class FileWarningDialog {
 
-    public static void show(Map<Path, String> unreadableFiles, String title) {
+    public static void show(Map<String, String> unreadableFiles, String title) {
         String[] columnNames = {"File", "Error"};
         Object[][] data = new Object[unreadableFiles.size()][2];
 
         int i = 0;
-        for (Map.Entry<Path, String> entry : unreadableFiles.entrySet()) {
-            data[i][0] = entry.getKey().toString();
+        for (Map.Entry<String, String> entry : unreadableFiles.entrySet()) {
+            data[i][0] = entry.getKey();
             data[i][1] = entry.getValue();
             i++;
         }
