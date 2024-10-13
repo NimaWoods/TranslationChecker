@@ -42,7 +42,6 @@ public class TranslationManager {
 
 			translateButtons.setEnabled(false);
 
-			// Create a SwingWorker to run the task in the background
 			SwingWorker<Void, Void> worker = new SwingWorker<>() {
 				@Override
 				protected Void doInBackground() throws Exception {
@@ -60,20 +59,36 @@ public class TranslationManager {
 						throw new Exception("Please select a row to translate.");
 					}
 
-					String sourceLanguage = "auto";  // Default is auto-detection
+					String sourceLanguage = "auto";
+
 					if (!Boolean.parseBoolean(settings.getProperty(LANGUAGE_DETECTION.getKey()))) {
-						// Dialog to let the user pick a source language
-						Object selectedLanguage = JOptionPane.showInputDialog(null, "Select Source Language:",
-								"Source Language", JOptionPane.QUESTION_MESSAGE, null,
-								LanguagesConstant.values(), LanguagesConstant.ENGLISH);
+						Object selectedLanguage = JOptionPane.showInputDialog(
+								null,
+								"Select Source Language:",
+								"Source Language",
+								JOptionPane.QUESTION_MESSAGE,
+								null,
+								LanguagesConstant.values(),
+								LanguagesConstant.ENGLISH
+						);
 
 						if (selectedLanguage != null) {
 							sourceLanguage = ((LanguagesConstant) selectedLanguage).getLocale().getLanguage();
 						}
 					}
 
+					// Schleife über die ausgewählten Modellreihen
 					for (int modelRow : modelRows) {
+						// Hole den aktuell ausgewählten Wert aus der Tabelle
 						String selectedValue = (String) editDialogTable.getValueAt(modelRow, 2);
+
+						// Wenn der Wert leer ist, versuche den deutschen Wert zu verwenden
+						if (selectedValue == null || selectedValue.trim().isEmpty()) {
+							String germanValue = (String) editDialogTable.getValueAt(modelRow, 2); // Deutscher Wert
+							if (germanValue != null && !germanValue.trim().isEmpty()) {
+								selectedValue = germanValue;
+							}
+						}
 						selectedValues.add(selectedValue);
 					}
 
@@ -85,6 +100,7 @@ public class TranslationManager {
 						startTranslation(selectedRowsInEditDialog, sourceLanguage);
 					}
 					return null;
+
 				}
 
 				private void showNotEnoughTokensDialog(int[] selectedRowsInEditDialog) {

@@ -65,4 +65,16 @@ public class UIComponentFactory {
 		header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, DesignColorsConstant.HEADER_BORDER_COLOR.getColor()));  // Randfarbe aus Enum
 		return header;
 	}
+
+	public static JComboBox<String> createComboBox(String[] items) {
+		JComboBox<String> comboBox = new JComboBox<>(items);
+		comboBox.setBackground(DesignColorsConstant.LIGHT_GRAY.getColor());
+		comboBox.setForeground(DesignColorsConstant.BLACK.getColor());
+		comboBox.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(DesignColorsConstant.DARK_GRAY.getColor()),
+				BorderFactory.createEmptyBorder(5, 10, 5, 10)
+		));
+
+		return comboBox;
+	}
 }
