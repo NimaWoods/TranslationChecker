@@ -79,7 +79,7 @@ public class TranslationManager {
 						throw new Exception("Please select a row to translate.");
 					}
 
-					String sourceLanguage = "auto";
+					String sourceLanguage = "auto"; // Auto detect source language
 
 					if (!Boolean.parseBoolean(settings.getProperty(LANGUAGE_DETECTION.getKey()))) {
 						Object selectedLanguage = JOptionPane.showInputDialog(
@@ -97,15 +97,20 @@ public class TranslationManager {
 						}
 					}
 
-					// Schleife über die ausgewählten Modellreihen
 					for (int modelRow : modelRows) {
 						if (modelRow >= 0 && modelRow < editDialogTable.getRowCount()) {
 							String selectedValue = (String) editDialogTable.getValueAt(modelRow, 2);
 
+							// If the value is empty, use the German or English value
 							if (selectedValue == null || selectedValue.trim().isEmpty()) {
-								String germanValue = (String) editDialogTable.getValueAt(modelRow, 2); // Deutscher Wert
+								String germanValue = editDialogTable.getValueAt(modelRow, 2).toString();
+								String englishValue = editDialogTable.getValueAt(modelRow, 2).toString();
 								if (germanValue != null && !germanValue.trim().isEmpty()) {
 									selectedValue = germanValue;
+								} else if (germanValue == null || englishValue != null && !englishValue.trim().isEmpty()) {
+									selectedValue = englishValue;
+								} else {
+									selectedValue = "";
 								}
 							}
 							selectedValues.add(selectedValue);
