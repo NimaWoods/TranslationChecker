@@ -1,21 +1,33 @@
 package com.gui.manager;
 
+import static com.gui.contsants.SettingsConstant.LANGUAGE_DETECTION;
+
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.table.DefaultTableModel;
+
 import com.gui.TranslationCheckerApp;
 import com.gui.contsants.LanguagesConstant;
 import com.gui.services.DeepLService;
 import com.gui.ui.FileWarningDialog;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import static com.gui.contsants.SettingsConstant.LANGUAGE_DETECTION;
 
 public class TranslationManager {
 
@@ -52,7 +64,15 @@ public class TranslationManager {
 					int[] modelRows = new int[selectedRowsInEditDialog.length];
 
 					for (int i = 0; i < selectedRowsInEditDialog.length; i++) {
-						modelRows[i] = editDialogTable.convertRowIndexToModel(selectedRowsInEditDialog[i]);
+						int modelRow = editDialogTable.convertRowIndexToModel(selectedRowsInEditDialog[i]);
+
+						System.out.println("Accessing row " + modelRow + " of " + editDialogTable.getRowCount());
+
+						if (modelRow >= 0 && modelRow < editDialogTable.getRowCount()) {
+							modelRows[i] = modelRow;
+						} else {
+							System.err.println("Invalid model row index: " + modelRow);
+						}
 					}
 
 					if (selectedRowsInEditDialog.length == 0) {
@@ -79,17 +99,19 @@ public class TranslationManager {
 
 					// Schleife über die ausgewählten Modellreihen
 					for (int modelRow : modelRows) {
-						// Hole den aktuell ausgewählten Wert aus der Tabelle
-						String selectedValue = (String) editDialogTable.getValueAt(modelRow, 2);
+						if (modelRow >= 0 && modelRow < editDialogTable.getRowCount()) {
+							String selectedValue = (String) editDialogTable.getValueAt(modelRow, 2);
 
-						// Wenn der Wert leer ist, versuche den deutschen Wert zu verwenden
-						if (selectedValue == null || selectedValue.trim().isEmpty()) {
-							String germanValue = (String) editDialogTable.getValueAt(modelRow, 2); // Deutscher Wert
-							if (germanValue != null && !germanValue.trim().isEmpty()) {
-								selectedValue = germanValue;
+							if (selectedValue == null || selectedValue.trim().isEmpty()) {
+								String germanValue = (String) editDialogTable.getValueAt(modelRow, 2); // Deutscher Wert
+								if (germanValue != null && !germanValue.trim().isEmpty()) {
+									selectedValue = germanValue;
+								}
 							}
+							selectedValues.add(selectedValue);
+						} else {
+							System.err.println("Invalid row index: " + modelRow);
 						}
-						selectedValues.add(selectedValue);
 					}
 
 					boolean isEnoughLeft = DeepLService.isEnoughTokensLeft(selectedValues);

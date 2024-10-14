@@ -1,5 +1,35 @@
 package com.gui;
 
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.RowFilter;
+import javax.swing.RowSorter;
+import javax.swing.SortOrder;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+
 import com.gui.contsants.LanguagesConstant;
 import com.gui.core.TranslationCheck;
 import com.gui.manager.SettingsManager;
@@ -9,17 +39,6 @@ import com.gui.ui.EditTranslationsDialog;
 import com.gui.ui.FilterDialog;
 import com.gui.ui.SettingsDialog;
 import com.gui.ui.UIComponentFactory;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
-import java.awt.*;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.*;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class TranslationCheckerApp extends JFrame {
 
@@ -236,6 +255,8 @@ public class TranslationCheckerApp extends JFrame {
 
 	public void setStatusLabel(String text) {
 		statusLabel.setText(text);
+		statusLabel.repaint();
+		statusLabel.revalidate();
 	}
 
 	private void applyLanguageFilter(String language) {

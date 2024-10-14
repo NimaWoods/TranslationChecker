@@ -1,5 +1,28 @@
 package com.gui.core;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.swing.JOptionPane;
+import javax.swing.JProgressBar;
+import javax.swing.SwingWorker;
+
 import com.gui.TranslationCheckerApp;
 import com.gui.contsants.LanguagesConstant;
 import com.gui.manager.SettingsManager;
@@ -8,22 +31,6 @@ import com.gui.services.FileEncodingConverter;
 import com.gui.services.LocaleEncodingService;
 import com.gui.ui.ConvertedFilesDialog;
 import com.gui.ui.FileWarningDialog;
-
-import javax.swing.*;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class TranslationCheck {
 
@@ -79,15 +86,13 @@ public class TranslationCheck {
 					return null;
 				}
 
-				// Iterate over all languages names
 				for (LanguagesConstant lang : LanguagesConstant.values()) {
 
+					TranslationCheckerApp app = new TranslationCheckerApp();
+					app.setStatusLabel("Loading language: " + lang.name());
+
 					Charset inputEncoding;
-					if (lang == null) {
-						inputEncoding = StandardCharsets.ISO_8859_1;
-					} else {
-						inputEncoding = lang.getEncoding();
-					}
+					inputEncoding = lang.getEncoding();
 
 					List<Path> paths = findAllPropertiesFiles(BASE_PATH, lang);
 					int completedSteps = 0;
@@ -179,6 +184,7 @@ public class TranslationCheck {
 					.filter(path -> path.getFileName().toString().endsWith(".properties"))
 					.filter(path -> !path.toString().contains("bin" + File.separator))
 					.filter(path -> !path.toString().contains("build" + File.separator))
+					.filter(path -> !path.toString().contains(".idea" + File.separator))
 					.collect(Collectors.toList());
 		}
 	}
