@@ -34,3 +34,12 @@ target/
 
 ### Application ###
 settings.properties
+
+##ä# Java ###
+*.jar
+*.war
+*.ear
+*.nar
+*.har
+*.ipr
+*.iws
