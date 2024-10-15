@@ -30,3 +30,7 @@ bin/
 
 ### Maven ###
 *.class
+target/
+
+### Application ###
+settings.properties

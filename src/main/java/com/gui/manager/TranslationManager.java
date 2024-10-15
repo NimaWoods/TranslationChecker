@@ -57,6 +57,7 @@ public class TranslationManager {
 			SwingWorker<Void, Void> worker = new SwingWorker<>() {
 				@Override
 				protected Void doInBackground() throws Exception {
+
 					Properties settings = settingsManager.getSettings();
 					selectedValues.clear();
 
@@ -80,8 +81,9 @@ public class TranslationManager {
 					}
 
 					String sourceLanguage = "auto"; // Auto detect source language
+					Boolean languageDetectionIsActive = Boolean.parseBoolean(settings.getProperty(LANGUAGE_DETECTION.getKey())); // Language detection is not active
 
-					if (!Boolean.parseBoolean(settings.getProperty(LANGUAGE_DETECTION.getKey()))) {
+					if (!languageDetectionIsActive) {
 						Object selectedLanguage = JOptionPane.showInputDialog(
 								null,
 								"Select Source Language:",

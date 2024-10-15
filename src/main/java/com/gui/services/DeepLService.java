@@ -1,10 +1,15 @@
 package com.gui.services;
 
-import com.cybozu.labs.langdetect.Detector;
-import com.cybozu.labs.langdetect.DetectorFactory;
-import com.cybozu.labs.langdetect.LangDetectException;
-import com.gui.contsants.LanguagesConstant;
-import com.gui.manager.SettingsManager;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
@@ -17,15 +22,11 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
+import com.cybozu.labs.langdetect.Detector;
+import com.cybozu.labs.langdetect.DetectorFactory;
+import com.cybozu.labs.langdetect.LangDetectException;
+import com.gui.contsants.LanguagesConstant;
+import com.gui.manager.SettingsManager;
 
 public class DeepLService {
 
@@ -161,8 +162,9 @@ public class DeepLService {
 				.map(lang -> lang.getLocale().getLanguage())
 				.collect(Collectors.joining("|"));
 
-		// Regular expression zum Entfernen des Sprachmarkers am Ende des Textes
-		return text.replaceAll("\\s*\\(\\b(" + languageCodes + ")\\b\\)$", "").trim();
+		return text
+				.replaceAll("\\s*\\(\\b(" + languageCodes + ")\\b\\)$", "").trim()
+				.replaceAll("\\s*\\(\\b(" + languageCodes.toUpperCase() + ")\\b\\)$", "").trim();
 	}
 
 	public static boolean isEnoughTokensLeft(List<String> valueList) throws IOException, ParseException {
