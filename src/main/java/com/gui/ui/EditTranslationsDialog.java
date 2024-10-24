@@ -1,5 +1,6 @@
 package com.gui.ui;
 
+import com.gui.manager.TableManager;
 import com.gui.manager.TranslationKeyManager;
 import com.gui.manager.TranslationManager;
 import com.gui.services.LocaleEncodingService;
@@ -73,7 +74,8 @@ public class EditTranslationsDialog {
 		JScrollPane scrollPane = UIComponentFactory.createScrollPane(editDialogTable);
 		dialog.add(scrollPane, BorderLayout.CENTER);
 
-		registerTableModelListenerForEditValue(editDialogTableModel);
+		TableManager tableManager = new TableManager();
+		tableManager.registerTableModelListenerForEditValue(editDialogTableModel, editDialogTable);
 
 		// Verwende die Factory, um den Button zu erstellen
 		JPanel southPanel = new JPanel(new BorderLayout());
@@ -88,55 +90,5 @@ public class EditTranslationsDialog {
 		dialog.setSize(800, 400);
 		dialog.setLocationRelativeTo(null);
 		dialog.setVisible(true);
-	}
-
-	private void registerTableModelListenerForEditValue(DefaultTableModel model) {
-		model.addTableModelListener(e -> {
-			if (editDialogTable.isEditing()) {
-				editDialogTable.getCellEditor().stopCellEditing();
-			}
-
-			if (e.getType() == TableModelEvent.UPDATE) {
-				JTable currentTable = model == tableModel ? table : findTableByModel(model);
-
-				int startRow = e.getFirstRow();
-				int endRow = e.getLastRow();
-
-				for (int row = startRow; row <= endRow; row++) {
-					int modelRow = currentTable.convertRowIndexToModel(row);
-
-					String newValue = (String) currentTable.getValueAt(modelRow, 2);
-
-					// Sprache, Key und Datei aus der Tabelle holen
-					String language = model.getValueAt(modelRow, 0).toString();
-					String key = model.getValueAt(modelRow, 1).toString();
-					String filePath = model.getValueAt(modelRow, 3).toString();
-
-					// Aktualisiere den Key in der Datei
-					TranslationKeyManager translationKeyManager = new TranslationKeyManager();
-					try {
-						translationKeyManager.updateKeyInFile(language, key, newValue, filePath);
-					} catch (IOException ex) {
-						throw new RuntimeException(ex);
-					}
-
-					// Synchronisiere den Wert im Edit Dialog auch in der Haupttabelle
-					if (model != tableModel) {
-						translationKeyManager.updateColumnValue(language, key, newValue, tableModel);
-						editDialogTableModel.fireTableDataChanged();
-
-					}
-				}
-			}
-		});
-	}
-
-	private JTable findTableByModel(DefaultTableModel model) {
-		if (model == tableModel) {
-			return table;
-		} else if (model == editDialogTableModel) {
-			return editDialogTable;
-		}
-		return null;
 	}
 }

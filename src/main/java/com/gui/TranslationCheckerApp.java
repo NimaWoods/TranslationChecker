@@ -33,6 +33,7 @@ import javax.swing.table.TableRowSorter;
 import com.gui.contsants.LanguagesConstant;
 import com.gui.core.TranslationCheck;
 import com.gui.manager.SettingsManager;
+import com.gui.manager.TableManager;
 import com.gui.manager.TranslationManager;
 import com.gui.model.LanguageProperties;
 import com.gui.ui.EditTranslationsDialog;
@@ -100,12 +101,15 @@ public class TranslationCheckerApp extends JFrame {
 		JScrollPane scrollPane = UIComponentFactory.createScrollPane(table);
 		add(scrollPane, BorderLayout.CENTER);
 
+		TableManager tableManager = new TableManager();
+		tableManager.registerTableModelListenerForEditValue(tableModel, table);
+
 		progressBar = new JProgressBar();
 		progressBar.setStringPainted(true);
 		progressBar.setVisible(false);
 
 		statusLabel = UIComponentFactory.createLabel("Translation Checker");
-		statusLabel.setHorizontalAlignment(SwingConstants.RIGHT);  // Rechtsbündig ausgerichtet
+		statusLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
 		initButtonsAndPanels();
 	}
@@ -241,17 +245,23 @@ public class TranslationCheckerApp extends JFrame {
 		sortTable();
 	}
 
-	public void sortTable() {
-		TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
-		table.setRowSorter(sorter);
+	private TableRowSorter<DefaultTableModel> sorter;
 
-		List<RowSorter.SortKey> sortKeys = new ArrayList<>(25);
+	public void sortTable() {
+		if (sorter == null) {
+			sorter = new TableRowSorter<>(tableModel);
+			table.setRowSorter(sorter);
+		}
+
+		List<RowSorter.SortKey> sortKeys = new ArrayList<>();
 		sortKeys.add(new RowSorter.SortKey(1, SortOrder.ASCENDING));
+
 		sorter.setSortKeys(sortKeys);
 
 		table.revalidate();
 		table.repaint();
 	}
+
 
 	public void setStatusLabel(String text) {
 		statusLabel.setText(text);
