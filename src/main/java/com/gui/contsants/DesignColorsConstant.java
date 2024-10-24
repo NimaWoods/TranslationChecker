@@ -10,7 +10,7 @@ public enum DesignColorsConstant {
 	DARK_GRAY(new Color(128, 128, 128)),
 	WHITE(Color.WHITE),
 	BLACK(Color.BLACK),
-	GRID_COLOR(Color.LIGHT_GRAY),
+	GRID_COLOR(new Color(192, 192, 192)),
 	HEADER_BORDER_COLOR(new Color(192, 192, 192));
 
 	private final Color color;

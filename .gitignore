@@ -31,6 +31,7 @@ bin/
 ### Maven ###
 *.class
 /target/
+target/
 
 ### Application ###
 settings.properties
