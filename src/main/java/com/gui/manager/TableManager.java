@@ -4,8 +4,10 @@ import javax.swing.JTable;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableModel;
 import java.io.IOException;
+import java.util.Map;
 
 import com.gui.TranslationCheckerApp;
+import com.gui.ui.FileWarningDialog;
 
 public class TableManager {
 
@@ -47,10 +49,10 @@ public class TableManager {
                 try {
                     translationKeyManager.updateKeyInFile(language, key, newValue, filePath);
                 } catch (IOException ex) {
+                    FileWarningDialog.show(Map.of(filePath, ex.getMessage()), "Error updating key in file");
                     throw new RuntimeException(ex);
                 }
 
-                // Update the column value in the current model
                 translationKeyManager.updateColumnValue(language, key, newValue, model);
 
                 TranslationCheckerApp app = new TranslationCheckerApp();
