@@ -236,7 +236,24 @@ public class TranslationManager {
 					TranslationKeyManager translationKeyManager = new TranslationKeyManager();
 
 					for (int selectedRow : selectedRowsInEditDialog) {
-						String selectedValue = editDialogTable.getValueAt(selectedRow, 2).toString();
+						String targetLanguage = editDialogTable.getValueAt(selectedRow, 0).toString();
+						String key = editDialogTable.getValueAt(selectedRow, 1).toString();
+						String filePath = editDialogTable.getValueAt(selectedRow, 3).toString();
+						
+						// Get the selected value from the table
+						Object valueObj = editDialogTable.getValueAt(selectedRow, 2);
+						String selectedValue = valueObj != null ? valueObj.toString() : "";
+						boolean usingFallback = false;
+						
+						// If the value is empty, try to find a fallback value
+						if (selectedValue == null || selectedValue.trim().isEmpty() || selectedValue.equals("(auto)")) {
+							String fallbackValue = findFallbackValue(key, targetLanguage);
+							if (fallbackValue != null && !fallbackValue.trim().isEmpty()) {
+								selectedValue = fallbackValue;
+								usingFallback = true;
+								System.out.println("Using fallback value for key '" + key + "': " + fallbackValue);
+							}
+						}
 
 						// Remove "(*)" at the end of the value
 						Pattern languageCodePattern = Pattern.compile("\\s*\\((?i:" +
@@ -247,14 +264,29 @@ public class TranslationManager {
 						selectedValue = languageCodePattern.matcher(selectedValue).replaceAll("");
 						selectedValues.add(selectedValue);
 
-						String targetLanguage = editDialogTable.getValueAt(selectedRow, 0).toString();
-						String key = editDialogTable.getValueAt(selectedRow, 1).toString();
-						String filePath = editDialogTable.getValueAt(selectedRow, 3).toString();
+						// If we're still dealing with an empty value, just update with empty string and continue
+						if (selectedValue == null || selectedValue.trim().isEmpty()) {
+							try {
+								translationKeyManager.updateKeyInFile(targetLanguage, key, "", filePath);
+								translationKeyManager.updateColumnValue(targetLanguage, key, "", editDialogTableModel);
+								translationKeyManager.updateColumnValue(targetLanguage, key, "", mainTableModel);
+								continue;
+							} catch (IOException ex) {
+								failedFiles.put(Path.of(filePath) + " (" + key + ")", ex.getMessage());
+								continue;
+							}
+						}
 
 						// Translate the value using DeepL API
 						String translatedValue;
 						try {
 							translatedValue = DeepLService.translateString(selectedValue, sourceLanguage, targetLanguage);
+							
+							// Mark the translation as using a fallback if applicable
+							if (usingFallback && translatedValue != null && !translatedValue.trim().isEmpty()) {
+								translatedValue += " (auto)";
+							}
+							
 							newValues.add(translatedValue);
 						} catch (Exception e) {
 							failedFiles.put(Path.of(filePath) + " (" + key + ")", e.getMessage());

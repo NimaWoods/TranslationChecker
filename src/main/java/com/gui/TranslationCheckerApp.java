@@ -15,6 +15,9 @@ import java.util.regex.Pattern;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
@@ -32,12 +35,14 @@ import javax.swing.table.TableRowSorter;
 
 import com.gui.contsants.LanguagesConstant;
 import com.gui.core.TranslationCheck;
+import com.gui.manager.LanguageManager;
 import com.gui.manager.SettingsManager;
 import com.gui.manager.TableManager;
 import com.gui.manager.TranslationManager;
 import com.gui.model.LanguageProperties;
 import com.gui.ui.EditTranslationsDialog;
 import com.gui.ui.FilterDialog;
+import com.gui.ui.LanguageSettingsDialog;
 import com.gui.ui.SettingsDialog;
 import com.gui.ui.UIComponentFactory;
 
@@ -56,8 +61,13 @@ public class TranslationCheckerApp extends JFrame {
 	SettingsDialog settingsDialog;
 
 	public TranslationCheckerApp() {
+		// Initialize managers
 		settings = new SettingsManager();
 		settings.loadSettings();
+		
+		// Initialize language manager (this will also set it in LanguagesConstant)
+		LanguageManager.getInstance();
+		
 		initLookAndFeel();
 		initComponents();
 	}
@@ -136,17 +146,6 @@ public class TranslationCheckerApp extends JFrame {
 			editTranslationsDialog.show();
 		});
 
-		JButton filterButton = UIComponentFactory.createButton("Filter");
-		filterButton.addActionListener(e -> {
-			FilterDialog filterDialog = new FilterDialog();
-			filterDialog.show(this);
-
-			String selectedLanguage = filterDialog.getSelectedFilter();
-			if (selectedLanguage != null && !selectedLanguage.isEmpty()) {
-				applyLanguageFilter(selectedLanguage);
-			}
-		});
-
 		// Suchleiste
 		JTextField searchField = UIComponentFactory.createTextField("");
 		JButton searchButton = UIComponentFactory.createButton("Search");
@@ -154,7 +153,6 @@ public class TranslationCheckerApp extends JFrame {
 
 		// Panels erstellen
 		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-		buttonPanel.add(filterButton);
 		buttonPanel.add(translateButton);
 		buttonPanel.add(allTranslationsButton);
 
@@ -169,6 +167,14 @@ public class TranslationCheckerApp extends JFrame {
 		JPanel southPanel = new JPanel(new BorderLayout());
 		JPanel southWestPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		southWestPanel.add(settingsButton);
+		
+		// Add language settings button
+		JButton languageSettingsButton = UIComponentFactory.createButton("Language Settings");
+		languageSettingsButton.addActionListener(e -> {
+			LanguageSettingsDialog.showDialog(this);
+		});
+		southWestPanel.add(languageSettingsButton);
+		
 		southWestPanel.add(refreshButton);
 
 		southPanel.add(southWestPanel, BorderLayout.WEST);
@@ -289,27 +295,5 @@ public class TranslationCheckerApp extends JFrame {
 		} catch (Exception e) {
 			// Ignore exceptions from the UI update
 		}
-	}
-
-	private void applyLanguageFilter(String language) {
-		if (language == null || language.isEmpty()) {
-			table.setRowSorter(null);  // Filter aufheben, wenn keine Sprache ausgewählt
-			return;
-		}
-
-		Locale langLocale = LanguagesConstant.valueOf(language).getLocale();
-
-		TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
-		table.setRowSorter(sorter);
-
-		RowFilter<DefaultTableModel, Object> languageFilter = new RowFilter<DefaultTableModel, Object>() {
-			@Override
-			public boolean include(Entry<? extends DefaultTableModel, ? extends Object> entry) {
-				Locale locale = (Locale) entry.getValue(0);  // Zugriff auf die Sprache
-				return locale.getLanguage().equals(langLocale.getLanguage());  // Vergleiche die Sprache
-			}
-		};
-
-		sorter.setRowFilter(languageFilter);
 	}
 }

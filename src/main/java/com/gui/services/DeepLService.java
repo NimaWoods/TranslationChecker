@@ -87,12 +87,24 @@ public class DeepLService {
 	 * @return The translated text.
 	 */
 	public static String translateString(String text, String sourceLanguage, String targetLanguage) throws IOException, ParseException {
+		// Check if text is empty or null
+		if (text == null || text.trim().isEmpty()) {
+			logger.info("Empty text provided for translation, returning empty string");
+			return text; // Return the original empty text
+		}
 
 		if (sourceLanguage.equals("auto")) {
 			sourceLanguage = detectLanguage(text);
+			
+			// If language detection failed, default to English as source
+			if (sourceLanguage == null) {
+				logger.info("Language detection failed, defaulting to English as source language");
+				sourceLanguage = "en";
+			}
 
 			if(Objects.equals(sourceLanguage, targetLanguage)) {
-				throw new IllegalArgumentException("Detected Source language (" + sourceLanguage + ") and target language (" + targetLanguage + ") are the same");
+				logger.info("Source language and target language are the same, returning original text");
+				return text; // Return original text if languages are the same
 			}
 		}
 
@@ -134,6 +146,12 @@ public class DeepLService {
 	 * @return The detected language code (e.g., "en" for English, "de" for German).
 	 */
 	public static String detectLanguage(String text) {
+		// Check if text is empty or null
+		if (text == null || text.trim().isEmpty()) {
+			logger.info("Empty text provided for language detection, returning null");
+			return null;
+		}
+		
 		// Überprüfen, ob die Sprachprofile bereits geladen wurden
 		if (!profilesLoaded) {
 			try {
