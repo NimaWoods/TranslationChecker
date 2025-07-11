@@ -42,7 +42,6 @@ public class TranslationCheck {
 
 	Logger logger = Logger.getLogger(getClass().getName());
 	private final JProgressBar progressBar;
-	private final String[] LANGUAGES;
 	private final String BASE_PATH;
 	Properties settings;
 	private final TranslationCheckerApp translationCheckerApp;
@@ -52,7 +51,6 @@ public class TranslationCheck {
 	public TranslationCheck(JProgressBar progressBar, TranslationCheckerApp app) {
 		this.settings = settingsDAO.getSettings();
 		this.progressBar = progressBar;
-		this.LANGUAGES = Arrays.stream(LanguagesConstant.values()).map(LanguagesConstant::name).toArray(String[]::new);
 		this.BASE_PATH = settings.getProperty("base.path");
 		this.translationCheckerApp = app;
 	}
