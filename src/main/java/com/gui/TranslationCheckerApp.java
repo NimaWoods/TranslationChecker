@@ -268,6 +268,28 @@ public class TranslationCheckerApp extends JFrame {
 		statusLabel.repaint();
 		statusLabel.revalidate();
 	}
+	
+	/**
+	 * Updates the progress bar and other UI components immediately.
+	 * This ensures the UI remains responsive during long-running operations.
+	 */
+	public void updateProgressUI() {
+		// Make sure progress bar is visible
+		if (!progressBar.isVisible()) {
+			progressBar.setVisible(true);
+		}
+		
+		// Force immediate repaint of the progress bar and status label
+		progressBar.repaint();
+		statusLabel.repaint();
+		
+		// Update the UI thread
+		try {
+			javax.swing.SwingUtilities.invokeAndWait(() -> {});
+		} catch (Exception e) {
+			// Ignore exceptions from the UI update
+		}
+	}
 
 	private void applyLanguageFilter(String language) {
 		if (language == null || language.isEmpty()) {

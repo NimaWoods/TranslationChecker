@@ -16,6 +16,7 @@ import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -218,57 +219,150 @@ public class TranslationCheck {
 		};
 	}
 
-	// Helper method to search for properties files with progress updates
+	// Helper method to search for properties files with progress updates using parallel processing
 	private List<Path> findAllPropertiesFiles(String basePath, LanguagesConstant lang) throws IOException {
 		// Update status label to show which language is being searched
 		translationCheckerApp.setStatusLabel("Searching for " + lang.name() + " files...");
+		SwingUtilities.invokeLater(() -> translationCheckerApp.setStatusLabel("Searching for " + lang.name() + " files..."));
 
 		// Use lang.getLocale().getLanguage() instead of getLocale().toString()
 		String prefix = "messages_" + lang.getLocale().getLanguage();
-		List<Path> resultFiles = new ArrayList<>();
+		List<Path> resultFiles = Collections.synchronizedList(new ArrayList<>());
 		
-		// First do a quick check of how many total directories we'll be processing
-		// to give the user a sense of progress
+		// First count how many total directories we'll be processing to provide accurate progress
+		long startTime = System.currentTimeMillis();
+		List<Path> topDirs = new ArrayList<>();
+		
+		// Update the UI to show we're scanning the directory structure
+		SwingUtilities.invokeLater(() -> {
+			translationCheckerApp.setStatusLabel("Scanning directory structure for " + lang.name() + "...");
+			translationCheckerApp.updateProgressUI();
+		});
+		
+		// Get all directories to search, but do it more efficiently
 		try (Stream<Path> dirs = Files.walk(Paths.get(basePath), 1)) {
-			List<Path> topDirs = dirs.filter(Files::isDirectory)
+			topDirs = dirs.filter(Files::isDirectory)
 					.filter(path -> !path.equals(Paths.get(basePath)))
 					.filter(path -> !path.toString().contains("bin"))
 					.filter(path -> !path.toString().contains("build"))
 					.filter(path -> !path.toString().contains(".idea"))
 					.collect(Collectors.toList());
-			
-			// Update progress as we search each directory
-			for (Path dir : topDirs) {
-				// Update status with current directory being searched
-				translationCheckerApp.setStatusLabel("Searching " + lang.name() + ": " + dir.getFileName().toString());
+		}
+		
+		// Show how many directories we'll be searching
+		final int totalDirs = topDirs.size();
+		SwingUtilities.invokeLater(() -> {
+			translationCheckerApp.setStatusLabel("Found " + totalDirs + " directories to search for " + lang.name() + "...");
+			translationCheckerApp.updateProgressUI();
+		});
+		
+		// Create an atomic counter for progress tracking
+		final AtomicInteger processedDirs = new AtomicInteger(0);
+		final AtomicInteger totalFilesFound = new AtomicInteger(0);
+		
+		// Use a thread pool with a fixed number of threads for parallel processing
+		int numThreads = Math.min(Runtime.getRuntime().availableProcessors(), totalDirs);
+		if (numThreads < 1) numThreads = 1; // Ensure at least one thread
+		
+		ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+		List<Future<List<Path>>> futures = new ArrayList<>();
+		
+		// Submit directory search tasks to the thread pool
+		for (Path dir : topDirs) {
+			futures.add(executor.submit(() -> {
+				List<Path> dirResults = new ArrayList<>();
 				
 				// Find property files in this directory
 				try (Stream<Path> files = Files.walk(dir)) {
-					List<Path> foundFiles = files.filter(path -> path.getFileName().toString().startsWith(prefix))
-							.filter(path -> path.getFileName().toString().endsWith(".properties"))
+					List<Path> foundFiles = files
+							.filter(path -> {
+								String fileName = path.getFileName().toString();
+								return fileName.startsWith(prefix) && fileName.endsWith(".properties");
+							})
 							.filter(path -> !path.toString().contains("bin" + File.separator))
 							.filter(path -> !path.toString().contains("build" + File.separator))
 							.filter(path -> !path.toString().contains(".idea" + File.separator))
 							.collect(Collectors.toList());
 					
+					dirResults.addAll(foundFiles);
+					
+					// Update the shared results list
 					resultFiles.addAll(foundFiles);
+					
+					// Update progress counters
+					int currentDir = processedDirs.incrementAndGet();
+					int filesFound = totalFilesFound.addAndGet(foundFiles.size());
+					
+					// Update UI with progress
+					final String progressText = String.format("Searching %s: %s (%d/%d - %d%%) - %d files found", 
+							lang.name(), 
+							dir.getFileName().toString(),
+							currentDir,
+							totalDirs,
+							(currentDir * 100 / totalDirs),
+							filesFound);
+					
+					SwingUtilities.invokeLater(() -> {
+						translationCheckerApp.setStatusLabel(progressText);
+						translationCheckerApp.updateProgressUI();
+					});
 				}
 				
-				// We don't update progress here anymore - it's handled in the main method
-			}
+				return dirResults;
+			}));
 		}
 		
-		// Also check the base directory itself for properties files
-		try (Stream<Path> files = Files.list(Paths.get(basePath))) {
-			List<Path> foundFiles = files.filter(path -> path.getFileName().toString().startsWith(prefix))
-					.filter(path -> path.getFileName().toString().endsWith(".properties"))
-					.collect(Collectors.toList());
+		// Also check the base directory itself for properties files in parallel
+		Future<List<Path>> baseDirFuture = executor.submit(() -> {
+			SwingUtilities.invokeLater(() -> {
+				translationCheckerApp.setStatusLabel("Checking base directory for " + lang.name() + " files...");
+				translationCheckerApp.updateProgressUI();
+			});
 			
-			resultFiles.addAll(foundFiles);
+			List<Path> baseResults = new ArrayList<>();
+			try (Stream<Path> files = Files.list(Paths.get(basePath))) {
+				List<Path> foundFiles = files
+						.filter(path -> {
+							String fileName = path.getFileName().toString();
+							return fileName.startsWith(prefix) && fileName.endsWith(".properties");
+						})
+						.collect(Collectors.toList());
+				
+				baseResults.addAll(foundFiles);
+				resultFiles.addAll(foundFiles);
+				totalFilesFound.addAndGet(foundFiles.size());
+			}
+			
+			return baseResults;
+		});
+		
+		// Wait for all tasks to complete
+		try {
+			// Wait for all directory searches to complete
+			for (Future<List<Path>> future : futures) {
+				future.get();
+			}
+			
+			// Wait for base directory search
+			baseDirFuture.get();
+			
+		} catch (InterruptedException | ExecutionException e) {
+			logger.log(Level.SEVERE, "Error during parallel file search", e);
+		} finally {
+			// Shutdown the executor service
+			executor.shutdown();
 		}
 		
-		// Update status with the number of files found
-		translationCheckerApp.setStatusLabel("Found " + resultFiles.size() + " " + lang.name() + " files");
+		// Calculate elapsed time for this language search
+		long elapsedTime = System.currentTimeMillis() - startTime;
+		final String timeFormatted = String.format("%.1f", elapsedTime / 1000.0);
+		
+		// Update status with the number of files found and time taken
+		final String finalStatus = "Found " + resultFiles.size() + " " + lang.name() + " files in " + timeFormatted + " seconds";
+		SwingUtilities.invokeLater(() -> {
+			translationCheckerApp.setStatusLabel(finalStatus);
+			translationCheckerApp.updateProgressUI();
+		});
 		
 		return resultFiles;
 	}
