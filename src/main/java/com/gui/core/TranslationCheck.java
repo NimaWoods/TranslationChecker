@@ -71,6 +71,9 @@ public class TranslationCheck {
 			protected Void doInBackground() throws Exception {
 				progressBar.setValue(0);
 				progressBar.setVisible(true);
+				
+				// Show initial status message
+				translationCheckerApp.setStatusLabel("Initializing file collection...");
 
 				Map<LanguagesConstant, List<LanguageProperties>> propertiesMap = new HashMap<>();
 				List<String[]> convertedFiles = new ArrayList<>();
@@ -86,19 +89,56 @@ public class TranslationCheck {
 					return null;
 				}
 
-				for (LanguagesConstant lang : LanguagesConstant.values()) {
-
-					TranslationCheckerApp app = new TranslationCheckerApp();
-					app.setStatusLabel("Loading language: " + lang.name());
-
-					Charset inputEncoding;
-					inputEncoding = lang.getEncoding();
-
-					List<Path> paths = findAllPropertiesFiles(BASE_PATH, lang);
+				// Get total count of languages to process
+				LanguagesConstant[] languages = LanguagesConstant.values();
+				int totalLanguages = languages.length;
+				
+				// Show initial status that we're about to search for files
+				translationCheckerApp.setStatusLabel("Initializing: Preparing to search for all language files...");
+				setProgress(5); // Small initial progress
+				
+				// First phase: Find all property files for all languages
+				Map<LanguagesConstant, List<Path>> allLanguageFiles = new HashMap<>();
+				int languageCount = 0;
+				
+				// Estimate total files to process
+				for (LanguagesConstant lang : languages) {
+					translationCheckerApp.setStatusLabel("Finding " + lang.name() + " files... (" + languageCount + "/" + totalLanguages + " languages)");
+					
+					List<Path> foundFiles = findAllPropertiesFiles(BASE_PATH, lang);
+					allLanguageFiles.put(lang, foundFiles);
+					
+					languageCount++;
+					// Update progress for file discovery phase (up to 30%)
+					int fileDiscoveryProgress = (int)((double)languageCount / totalLanguages * 30);
+					setProgress(5 + fileDiscoveryProgress);
+				}
+				
+				// Show total files found across all languages
+				int totalFilesFound = allLanguageFiles.values().stream().mapToInt(List::size).sum();
+				translationCheckerApp.setStatusLabel("Processing " + totalFilesFound + " files across " + totalLanguages + " languages");
+				setProgress(35); // Progress after file discovery phase
+				
+				// Second phase: Process all the files we found
+				languageCount = 0;
+				int processedFiles = 0;
+				
+				for (LanguagesConstant lang : languages) {
+					translationCheckerApp.setStatusLabel("Processing " + lang.name() + " files... (Language " + (languageCount+1) + "/" + totalLanguages + ")");
+					
+					List<Path> paths = allLanguageFiles.get(lang);
+					int totalFiles = paths.size();
+					translationCheckerApp.setStatusLabel("Processing " + lang.name() + ": " + totalFiles + " files");
+					
+					Charset inputEncoding = lang.getEncoding();
 					int completedSteps = 0;
-					int totalSteps = paths.size();
 
+					int totalStepsForLanguage = paths.size();
 					for (Path path : paths) {
+						// Update file-specific status
+						String fileName = path.getFileName().toString();
+						translationCheckerApp.setStatusLabel("Processing " + lang.name() + ": " + fileName + " (" + completedSteps + "/" + totalStepsForLanguage + ")");
+						
 						Properties properties = new Properties();
 
 						FileEncodingConverter converter = new FileEncodingConverter();
@@ -118,8 +158,13 @@ public class TranslationCheck {
 						propertiesMap.computeIfAbsent(lang, k -> new ArrayList<>())
 								.add(new LanguageProperties(properties, path));
 
+						// Update progress
 						completedSteps++;
-						setProgress((int) (((double) completedSteps / totalSteps) * 100));
+						processedFiles++;
+						
+						// Calculate overall progress (35% for discovery + 60% for processing)
+						int processingProgress = (int)(((double)processedFiles / totalFilesFound) * 60);
+						setProgress(35 + processingProgress);
 					}
 
 					if (!convertedFiles.isEmpty()) {
@@ -173,19 +218,58 @@ public class TranslationCheck {
 		};
 	}
 
-	// Helper method to search for properties files
+	// Helper method to search for properties files with progress updates
 	private List<Path> findAllPropertiesFiles(String basePath, LanguagesConstant lang) throws IOException {
+		// Update status label to show which language is being searched
+		translationCheckerApp.setStatusLabel("Searching for " + lang.name() + " files...");
 
-		// Verwende lang.getLocale().getLanguage() anstelle von getLocale().toString()
+		// Use lang.getLocale().getLanguage() instead of getLocale().toString()
 		String prefix = "messages_" + lang.getLocale().getLanguage();
-
-		try (Stream<Path> files = Files.walk(Paths.get(basePath))) {
-			return files.filter(path -> path.getFileName().toString().startsWith(prefix))
-					.filter(path -> path.getFileName().toString().endsWith(".properties"))
-					.filter(path -> !path.toString().contains("bin" + File.separator))
-					.filter(path -> !path.toString().contains("build" + File.separator))
-					.filter(path -> !path.toString().contains(".idea" + File.separator))
+		List<Path> resultFiles = new ArrayList<>();
+		
+		// First do a quick check of how many total directories we'll be processing
+		// to give the user a sense of progress
+		try (Stream<Path> dirs = Files.walk(Paths.get(basePath), 1)) {
+			List<Path> topDirs = dirs.filter(Files::isDirectory)
+					.filter(path -> !path.equals(Paths.get(basePath)))
+					.filter(path -> !path.toString().contains("bin"))
+					.filter(path -> !path.toString().contains("build"))
+					.filter(path -> !path.toString().contains(".idea"))
 					.collect(Collectors.toList());
+			
+			// Update progress as we search each directory
+			for (Path dir : topDirs) {
+				// Update status with current directory being searched
+				translationCheckerApp.setStatusLabel("Searching " + lang.name() + ": " + dir.getFileName().toString());
+				
+				// Find property files in this directory
+				try (Stream<Path> files = Files.walk(dir)) {
+					List<Path> foundFiles = files.filter(path -> path.getFileName().toString().startsWith(prefix))
+							.filter(path -> path.getFileName().toString().endsWith(".properties"))
+							.filter(path -> !path.toString().contains("bin" + File.separator))
+							.filter(path -> !path.toString().contains("build" + File.separator))
+							.filter(path -> !path.toString().contains(".idea" + File.separator))
+							.collect(Collectors.toList());
+					
+					resultFiles.addAll(foundFiles);
+				}
+				
+				// We don't update progress here anymore - it's handled in the main method
+			}
 		}
+		
+		// Also check the base directory itself for properties files
+		try (Stream<Path> files = Files.list(Paths.get(basePath))) {
+			List<Path> foundFiles = files.filter(path -> path.getFileName().toString().startsWith(prefix))
+					.filter(path -> path.getFileName().toString().endsWith(".properties"))
+					.collect(Collectors.toList());
+			
+			resultFiles.addAll(foundFiles);
+		}
+		
+		// Update status with the number of files found
+		translationCheckerApp.setStatusLabel("Found " + resultFiles.size() + " " + lang.name() + " files");
+		
+		return resultFiles;
 	}
 }

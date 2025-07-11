@@ -31,6 +31,55 @@ import com.gui.ui.FileWarningDialog;
 
 public class TranslationManager {
 
+	/**
+	 * Finds a fallback value (German or English) for a given key when the current locale's value is empty.
+	 * @param key The key to find a fallback for
+	 * @param currentLocale The current locale to avoid using it as a fallback
+	 * @return The German or English value if found, or null if not found
+	 */
+	private String findFallbackValue(String key, String currentLocale) {
+		// First try to find a German value
+		for (int i = 0; i < editDialogTableModel.getRowCount(); i++) {
+			Object rowLocale = editDialogTableModel.getValueAt(i, 0);
+			Object rowKey = editDialogTableModel.getValueAt(i, 1);
+			Object rowValue = editDialogTableModel.getValueAt(i, 2);
+			
+			// Skip if this is the current locale we're trying to translate
+			if (rowLocale != null && rowLocale.toString().equals(currentLocale)) {
+				continue;
+			}
+			
+			// Check if this is the same key and it's a German locale
+			if (rowKey != null && rowKey.toString().equals(key) &&
+				rowLocale != null && rowLocale.toString().equals(LanguagesConstant.GERMAN.getLocale().toString()) &&
+				rowValue != null && !rowValue.toString().trim().isEmpty()) {
+				return rowValue.toString();
+			}
+		}
+		
+		// If German not found, try to find an English value
+		for (int i = 0; i < editDialogTableModel.getRowCount(); i++) {
+			Object rowLocale = editDialogTableModel.getValueAt(i, 0);
+			Object rowKey = editDialogTableModel.getValueAt(i, 1);
+			Object rowValue = editDialogTableModel.getValueAt(i, 2);
+			
+			// Skip if this is the current locale we're trying to translate
+			if (rowLocale != null && rowLocale.toString().equals(currentLocale)) {
+				continue;
+			}
+			
+			// Check if this is the same key and it's an English locale
+			if (rowKey != null && rowKey.toString().equals(key) &&
+				rowLocale != null && rowLocale.toString().equals(LanguagesConstant.ENGLISH.getLocale().toString()) &&
+				rowValue != null && !rowValue.toString().trim().isEmpty()) {
+				return rowValue.toString();
+			}
+		}
+		
+		// If no fallback found, return null
+		return null;
+	}
+
 	private final JTable editDialogTable;
 	private final DefaultTableModel editDialogTableModel;
 	private final JButton translateButtons;
@@ -103,14 +152,18 @@ public class TranslationManager {
 						if (modelRow >= 0 && modelRow < editDialogTable.getRowCount()) {
 							String selectedValue = (String) editDialogTable.getValueAt(modelRow, 2);
 
-							// If the value is empty, use the German or English value
+							// If the value is empty, use the German or English value from the properties group
 							if (selectedValue == null || selectedValue.trim().isEmpty()) {
-								String germanValue = editDialogTable.getValueAt(modelRow, 2).toString();
-								String englishValue = editDialogTable.getValueAt(modelRow, 2).toString();
-								if (germanValue != null && !germanValue.trim().isEmpty()) {
-									selectedValue = germanValue;
-								} else if (germanValue == null || englishValue != null && !englishValue.trim().isEmpty()) {
-									selectedValue = englishValue;
+								String key = (String) editDialogTable.getValueAt(modelRow, 1); // Get the key
+								String currentLocale = editDialogTable.getValueAt(modelRow, 0).toString(); // Current locale
+								
+								// Find German or English value for the same key
+								String fallbackValue = findFallbackValue(key, currentLocale);
+								
+								if (fallbackValue != null && !fallbackValue.trim().isEmpty()) {
+									selectedValue = fallbackValue;
+									// Update the cell in the table with the fallback value
+									editDialogTable.setValueAt(fallbackValue + " (auto)", modelRow, 2);
 								} else {
 									selectedValue = "";
 								}
