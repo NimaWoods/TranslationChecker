@@ -32,13 +32,13 @@ import com.gui.ui.FileWarningDialog;
 public class TranslationManager {
 
 	/**
-	 * Finds a fallback value (German or English) for a given key when the current locale's value is empty.
+	 * Finds a fallback value (only German) for a given key when the current locale's value is empty.
 	 * @param key The key to find a fallback for
 	 * @param currentLocale The current locale to avoid using it as a fallback
-	 * @return The German or English value if found, or null if not found
+	 * @return The German value if found, or null if not found
 	 */
 	private String findFallbackValue(String key, String currentLocale) {
-		// First try to find a German value
+		// Only try to find a German value as fallback
 		for (int i = 0; i < editDialogTableModel.getRowCount(); i++) {
 			Object rowLocale = editDialogTableModel.getValueAt(i, 0);
 			Object rowKey = editDialogTableModel.getValueAt(i, 1);
@@ -57,26 +57,7 @@ public class TranslationManager {
 			}
 		}
 		
-		// If German not found, try to find an English value
-		for (int i = 0; i < editDialogTableModel.getRowCount(); i++) {
-			Object rowLocale = editDialogTableModel.getValueAt(i, 0);
-			Object rowKey = editDialogTableModel.getValueAt(i, 1);
-			Object rowValue = editDialogTableModel.getValueAt(i, 2);
-			
-			// Skip if this is the current locale we're trying to translate
-			if (rowLocale != null && rowLocale.toString().equals(currentLocale)) {
-				continue;
-			}
-			
-			// Check if this is the same key and it's an English locale
-			if (rowKey != null && rowKey.toString().equals(key) &&
-				rowLocale != null && rowLocale.toString().equals(LanguagesConstant.ENGLISH.getLocale().toString()) &&
-				rowValue != null && !rowValue.toString().trim().isEmpty()) {
-				return rowValue.toString();
-			}
-		}
-		
-		// If no fallback found, return null
+		// If no German fallback found, return null
 		return null;
 	}
 

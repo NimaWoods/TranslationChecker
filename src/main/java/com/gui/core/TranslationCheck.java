@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
@@ -31,6 +32,7 @@ import javax.swing.SwingWorker;
 
 import com.gui.TranslationCheckerApp;
 import com.gui.contsants.LanguagesConstant;
+import com.gui.manager.LanguageManager;
 import com.gui.manager.SettingsManager;
 import com.gui.model.LanguageProperties;
 import com.gui.services.FileEncodingConverter;
@@ -93,9 +95,24 @@ public class TranslationCheck {
 					return null;
 				}
 
-				// Get total count of languages to process
-				LanguagesConstant[] languages = LanguagesConstant.values();
+				// Get all user-selected languages from LanguageManager
+				LanguageManager languageManager = LanguageManager.getInstance();
+				Map<String, Locale> userLanguages = languageManager.getAvailableLanguages();
+				
+				// Convert to LanguagesConstant array for backward compatibility
+				List<LanguagesConstant> selectedLanguages = new ArrayList<>();
+				for (LanguagesConstant lang : LanguagesConstant.values()) {
+					String langCode = lang.getLanguageCode();
+					if (userLanguages.containsKey(langCode)) {
+						selectedLanguages.add(lang);
+					}
+				}
+				
+				LanguagesConstant[] languages = selectedLanguages.toArray(new LanguagesConstant[0]);
 				int totalLanguages = languages.length;
+				
+				// Log the languages being processed
+				logger.info("Processing languages: " + Arrays.toString(languages));
 				
 				// Show initial status that we're about to search for files
 				translationCheckerApp.setStatusLabel("Initializing: Preparing to search for all language files...");
